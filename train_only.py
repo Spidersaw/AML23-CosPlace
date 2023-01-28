@@ -20,6 +20,7 @@ import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
+import random 
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
@@ -92,6 +93,7 @@ logging.info(f"Validation set: {val_ds}")
 
 
 if args.augmentation_device == "cuda":
+    random.seed(4321)
     gpu_augmentation = T.Compose([
             augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
                                                     contrast=args.contrast,
