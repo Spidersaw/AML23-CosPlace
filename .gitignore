@@ -2,3 +2,9 @@
 __pycache__
 logs
 cache
+paper/paper.aux
+paper/paper.fdb_latexmk
+paper/paper.fls
+paper/paper.log
+paper/paper.out
+paper/paper.synctex.gz
