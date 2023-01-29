@@ -45,28 +45,20 @@
 \begin{document}
 
 %%%%%%%%% TITLE - PLEASE UPDATE
-\title{Visual Geolocalization: s
+\title{Visual Geolocaslization:
 mapping images o GPS}
 
-\author{Testa Mario\\
-PoliTo\\
-Institution1 address\\
-{\tt\small firstauthor@i1.org}
-% For a paper whose authors are all at the same institution,
-% omit the following lines up until the closing ``}''.
-% Additional authors and addresses can be added with ``\and'',
-% just like the second author.
-% To save space, use either the email address or home page, not both
+\author{Cambria Paolo - s301164\\
+Politecnico di Torino\\
+{\tt\small paolocambria@studenti.polito.it}
 \and
-Cambria Paolo\\
-PoliTo\\
-First line of institution2 address\\
-{\tt\small secondauthor@i2.org}
+Ciciriello Giuseppe - 301953\\
+Politecnico di Torino\\
+{\tt\small giuseppe.ciciriello@studenti.polito.it}
 \and
-Ciciriello Giuseppe\\
-PoliTo\\
-First line of institution2 address\\
-{\tt\small secondauthor@i2.org}
+Testa Mario - 292630\\
+Politecnico di Torino\\
+{\tt\small mario.testa@studenti.polito.it}
 }
 \maketitle
 
@@ -81,9 +73,40 @@ In this work, we develop a theoretical and experimental framework to study the e
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
-\section{Introduction}
-\label{sec:intro}
+\section{Introduction}\label{sec:intro}
+Visual geo-localization (VG) [TODO CITE] is one of the most promising approaches in the field of computer vision [TODO CITE] and image localization,
+due to his importance in applications such as autonomous driving [TODO CITE C. McManus, W. Churchill, W. Maddern, A. Stewart, and
+P. Newman. Shady dealings: Robust, long-term visual localisation using illumination invariance. In Proc. Intl. Conf. on
+Robotics and Automation, 2014] or even augmented reality [TODO CITE 47 S. Middelberg, T. Sattler, O. Untzelmann, and L. Kobbelt.
+Scalable 6-DOF localization on mobile devices. In Proc.
+ECCV, 2014].
+VG usually consists of a place recognition task: given a query image of a place, its geographical location has to be roughly recognized and retrieved
+by finding the closest database geo-tagged images usually with a tolerance of few meters. 
+This task is extremely challenging due to the intrinsic dynamism of public places and different problems must be taken in account:
+there are a lot of moving objects which determine occlusion, enviromental changes, different illuminations during daylight and night time, season changing.
+Furthermore, most of the recent learning based VG methods focus on recognizing the location of images in a relatively small sized geographical area (e.g. a neighborhood), 
+which is not enough for concrete applications such as autonomous driving [TODO CITE] that operate in much larger areas such as whole cities. 
+\newline
+\textbf{Dataset}
+To achieve a VG task on a wider geographical area, a large representative dataset is required and as underlined by [TODO CITE GBERTON] the majority of 
+current datasets are either too small in the geographical coverage, or too sparse [TODO CITE]. Moreover, those datasets split the collected images into 
+disjoint sets for training and inference and this not suits a realistic use case, since the search query might be often an already seen place.
+For this reason it is recommendable to use the whole dataset to train the model, given also the cost of collecting the images for a consistent dataset.
+[TODO dire di SF-XL e Xs?]
+\newline
+\textbf{Training scalability}
+A such large dataset it's not so easy to exploit for training effectively a model. Many of the recent SOTA (state-of-the-art) methods take advantage
+of contrastive learning methods [TODO CITE], which can often depend on contrasting positive to negative examples across the training dataset [TODO CITE],
+a costly operation in terms of computation. 
+[TODO VALUTARE SE CITARE https://arxiv.org/pdf/1702.01238.pdf]
+[TODO citare gberton e dire che funziona su grandi paper]
+CosPlace [TODO citare] is an highly scalable training method, properly designed to work on larger dataset in the field of Geo-localization, in order to 
+overcome the costly computational needs required in this field and to successfully exploit such enormous amount of data to reach 
+SOTA results with compact descriptors.
 
+
+
+%---------------
 Please follow the steps outlined below when submitting your manuscript to the IEEE Computer Society Press.
 This style guide now has several important modifications (for example, you are no longer warned against the use of sticky tape to attach your artwork to the paper), so all authors should read this new version.
 
