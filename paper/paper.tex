@@ -73,7 +73,7 @@ In this work, we develop a theoretical and experimental framework to study the e
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
-\section{Introduction}\label{sec:intro}
+\section{Introduction}\label{sec:introduction}
 Visual geo-localization (VG) [TODO CITE] is one of the most promising approaches in the field of computer vision [TODO CITE] and image localization,
 due to his importance in applications such as autonomous driving [TODO CITE C. McManus, W. Churchill, W. Maddern, A. Stewart, and
 P. Newman. Shady dealings: Robust, long-term visual localisation using illumination invariance. In Proc. Intl. Conf. on
@@ -92,7 +92,7 @@ To achieve a VG task on a wider geographical area, a large representative datase
 current datasets are either too small in the geographical coverage, or too sparse [TODO CITE]. Moreover, those datasets split the collected images into 
 disjoint sets for training and inference and this not suits a realistic use case, since the search query might be often an already seen place.
 For this reason it is recommendable to use the whole dataset to train the model, given also the cost of collecting the images for a consistent dataset.
-[TODO dire di SF-XL e Xs?]
+[TODO dire di SF-XL e Xs? e toky onight??]
 \newline
 \textbf{Training scalability}
 A such large dataset it's not so easy to exploit for training effectively a model. Many of the recent SOTA (state-of-the-art) methods take advantage
@@ -103,36 +103,44 @@ a costly operation in terms of computation.
 CosPlace [TODO citare] is an highly scalable training method, properly designed to work on larger dataset in the field of Geo-localization, in order to 
 overcome the costly computational needs required in this field and to successfully exploit such enormous amount of data to reach 
 SOTA results with compact descriptors.
+\newline
+\textbf{Contributions}
+In this paper we want to investigate how the work of [TODO citare Berton] can be improved for place recognition tasks.
+In particular we focus to generally improve the recall [todo explain?] on the SF-XS dataset [TODO citare dataset / aggiungerlo] and more specifically
+on a dataset in completely different brightness conditions such as Tokyo-Night [TODO CITARE DATASET / AGGIUNGERLO].
+Furthermore, we want to assess how CosPlace [TODO CITARE] behaves when the data quality is scarce, e.g. for occlusion and blurry photos.
 
-
-
-%---------------
-Please follow the steps outlined below when submitting your manuscript to the IEEE Computer Society Press.
-This style guide now has several important modifications (for example, you are no longer warned against the use of sticky tape to attach your artwork to the paper), so all authors should read this new version.
-
-%-------------------------------------------------------------------------
-\subsection{Language}
-
-All manuscripts must be in English.
-
-\subsection{Dual submission}
-
-Please refer to the author guidelines on the \confName\ \confYear\ web page for a
-discussion of the policy on dual submissions.
-
-\subsection{Paper length}
-Papers, excluding the references section, must be no longer than eight pages in length.
-The references section will not be included in the page count, and there is no limit on the length of the references section.
-For example, a paper of eight pages with two pages of references would have a total length of 10 pages.
-{\bf There will be no extra page charges for \confName\ \confYear.}
-
-Overlength papers will simply not be reviewed.
-This includes papers where the margins and formatting are deemed to have been significantly altered from those laid down by this style guide.
-Note that this \LaTeX\ guide already sets figure captions and references in a smaller font.
-The reason such papers will not be reviewed is that there is no provision for supervised revisions of manuscripts.
-The reviewing process cannot determine the suitability of the paper for presentation in eight pages if it is reviewed in eleven.
+Our contribution consists of:
+[TODO listare le contributions dopo che abbiamo i risultati ]
+[TODO conclusioni rapide]
 
 %-------------------------------------------------------------------------
+\section{Related Works}\label{sec:relatedworks}
+Visual geolocalization on large scale is commonly considered as an image retrieval task, in which the correctness is determined by an established
+tolerance (usually 25 meters) from the query's ground truth position [TODO CITE].    
+One of the most representative study in this field is NetVLAD [TODO CITE], which introduces the VLAD pooling layer  [TODO RIVEDERE FRASE copiata da GBerton]
+that pools extracted descriptors into a fixed image representation whose parameters are learnable via back-propagation.
+The retrieval task is performed by using the learned embeddings produced by a feature extraction backbone equipped with a head that implements VLAD pooling.
+[/TODO]
+[TODO aggiungere tutta la prte delle loss altrui con contrastive learning]
+[TODO parlare bene di cosplace]
+%-------------------------------------------------------------------------
+\section{Experiments}\label{sec:experiments}
+\subsection{Implementation Details}
+[TODO aggiungere roba su architettura cosplace]
+\subsection{Ablation}
+\textbf{Augmentation Pipeline}
+[TODO DA RIFINIRE]
+To improve the  ... we conducted a study on the augmentation pipeline by implementing 4 new augmentations on the images with a probability of 0.25 and a custom seed for
+reproducibily purposes.
+Due to the computational requirements, we were only able to perform this ablation on SF-XXS dataset, the results are reported below in table [TODO ADD TABLE REF]:
+[TODO AGGIUNGERE TABLE]
+
+
+[TODO guardare extension b]
+
+
+
 \subsection{The ruler}
 The \LaTeX\ style defines a printed ruler which should be present in the version submitted for review.
 The ruler is provided in order that reviewers may comment on particular lines in the paper without circumlocution.
