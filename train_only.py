@@ -7,7 +7,7 @@ from tqdm import tqdm
 import multiprocessing
 from datetime import datetime
 import torchvision.transforms as T
-
+import custom_augmentations as CA
 import test
 import util
 import parser
@@ -20,6 +20,7 @@ import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
+import random 
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
@@ -90,7 +91,9 @@ val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_
 logging.info(f"Validation set: {val_ds}")
 
 
+
 if args.augmentation_device == "cuda":
+    random.seed(4321)
     gpu_augmentation = T.Compose([
             augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
                                                     contrast=args.contrast,
@@ -98,6 +101,10 @@ if args.augmentation_device == "cuda":
                                                     hue=args.hue),
             augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
                                                           scale=[1-args.random_resized_crop, 1]),
+                                                          T.RandomHorizontalFlip(p=args.hflip),
+                                                          CA.RandomGaussianBlur(p=args.gblur,kernel_size=1,sigma=(0.1,2.0)),
+                                                          T.RandomGrayscale(p=args.rgrayscale),
+                                                          T.RandomErasing(p=args.rerasing, scale=(0.02, 0.25), ratio=(0.3, 3.3), value=0, inplace=False),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 

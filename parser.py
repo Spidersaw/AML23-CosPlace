@@ -33,6 +33,12 @@ def parse_arguments(is_training: bool = True):
     parser.add_argument("--hue", type=float, default=0.5, help="_")
     parser.add_argument("--saturation", type=float, default=0.7, help="_")
     parser.add_argument("--random_resized_crop", type=float, default=0.5, help="_")
+    #custom agumentations
+    parser.add_argument("--hflip", type=float, default=0.25, help="_")
+    parser.add_argument("--gblur", type=float, default=0.25, help="_")
+    parser.add_argument("--rgrayscale", type=float, default=0.25, help="_")
+    parser.add_argument("--rerasing", type=float, default=0.25, help="_")
+
     # Validation / test parameters
     parser.add_argument("--infer_batch_size", type=int, default=16,
                         help="Batch size for inference (validating and testing)")
