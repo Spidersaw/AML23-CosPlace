@@ -67,4 +67,4 @@ if __name__ == "__main__":
     for idx, model_path in enumerate(models_directories):
         m = load_model(base_path.format(model_path, model_path),args)
         models_list.append((m, val_rec[idx]))
-    greedy_soup(models_list, "tokyo_xs/test/", args)
+    greedy_soup(models_list, "/content/small/test/", args)
