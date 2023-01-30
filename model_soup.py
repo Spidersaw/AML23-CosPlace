@@ -49,7 +49,7 @@ def greedy_soup(models_list, val_folder, args):
             greedy_soup_params = potential_greedy_soup_params
             print(f'Adding to soup.')
     experiment_name= "sample_soup"
-    torch.save(greedy_soup_params, f"soups/{experiment_name}/soup.pth") 
+    torch.save(greedy_soup_params, f"/content/AML23-CosPlace/soups/{experiment_name}/soup.pth") 
 
 
 def compare(m1):
