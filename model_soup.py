@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     args = parser.parse_arguments(is_training=False)
 
-    base_path = "model/{}/{}_best_model.pth"
+    base_path = "AML23-CosPlace/model/{}/{}_best_model.pth"
     models_directories=["cosface","sphereface","arcface"]
     val_rec = [52.4,61.0,53.3,50.5,47.6]
     models_list = []
