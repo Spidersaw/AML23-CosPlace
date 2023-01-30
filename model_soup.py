@@ -49,7 +49,7 @@ def greedy_soup(models_list, val_folder, args):
             greedy_soup_params = potential_greedy_soup_params
             print(f'Adding to soup.')
     experiment_name= "sample_soup"
-    torch.save(greedy_soup_params, f"soup.pth") 
+    torch.save(greedy_soup_params, f"soup.pth")
 
 
 def compare(m1):
@@ -60,11 +60,11 @@ if __name__ == "__main__":
 
     args = parser.parse_arguments(is_training=False)
 
-    base_path = "model/{}/{}_best_model.pth"
-    models_directories=["cosface","sphereface","arcface"]
+    base_path = "model/{}"
+    models_directories=["cosface/cosface_best_model.pth","ablation_augmentation/erasing_full.pth","ablation_augmentation/gblur_occlusion_full.pth"]
     val_rec = [52.4,61.0,53.3,50.5,47.6]
     models_list = []
     for idx, model_path in enumerate(models_directories):
-        m = load_model(base_path.format(model_path, model_path),args)
+        m = load_model(base_path.format(model_path),args)
         models_list.append((m, val_rec[idx]))
     greedy_soup(models_list, "/content/small/test/", args)
