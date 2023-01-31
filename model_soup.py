@@ -22,9 +22,10 @@ def greedy_soup(models_list, val_folder, args):
         model = model.eval()
        
         sorted_models.append((model, val))
-        continue
         recalls, recalls_str = test.test(args, val_ds, model)
-        print(recalls)
+        print("model tested: ", model)
+        print("recalls: ", recalls)
+        # continue
 
     sorted_models.sort(key=compare, reverse=True)
     greedy_soup_ingredients = [sorted_models[0][0]]
@@ -73,11 +74,10 @@ if __name__ == "__main__":
     args = parser.parse_arguments(is_training=False)
 
     base_path = "model/{}"
-    models_directories=["cosface/cosface_best_model.pth","ablation_augmentation/all_models.pth","ablation_augmentation/base_models.pth","ablation_augmentation/erasing_full.pth","ablation_augmentation/gblur_model.pth","ablation_augmentation/gblur_occlusion_full.pth","ablation_augmentation/grayscale_gblur.pth","ablation_augmentation/grayscale_model.pth","ablation_augmentation/grayscale_occlusion_model.pth","ablation_augmentation/hflip_model.pth","ablation_augmentation/occlusion_model.pth"]
-    # val_rec = [52.2,49.7,49.7]
-    val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
+    models_directories=["ablation_augmentation/base_model.pth","ablation_augmentation/gblur_model.pth","ablation_augmentation/grayscale_model.pth","ablation_augmentation/hflip_model.pth","ablation_augmentation/occlusion_model.pth","ablation_augmentation/grayscale_occlusion_model.pth","ablation_augmentation/grayscale_gblur.pth","ablation_augmentation/gblur_occlusion_full.pth","ablation_augmentation/all_models.pth"]
+    val_rec = [1.0, 1.2, 1.2, 1.0, 1.2, 1.1, 1.1, 1.2, 1.0]
     models_list = []
     for idx, model_path in enumerate(models_directories):
         m = load_model(base_path.format(model_path),args)
-        models_list.append((m, val_ds[idx]))
+        models_list.append((m, val_rec[idx]))
     greedy_soup(models_list, "/content/small/test/", args)
