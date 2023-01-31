@@ -23,7 +23,6 @@ def greedy_soup(models_list, val_folder, args):
        
         sorted_models.append((model, val))
         recalls, recalls_str = test.test(args, val_ds, model)
-        print("model tested: ", model)
         print("recalls: ", recalls)
         # continue
 
