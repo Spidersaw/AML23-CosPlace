@@ -22,9 +22,9 @@ def greedy_soup(models_list, val_folder, args):
         model = model.eval()
        
         sorted_models.append((model, val))
+        continue
         recalls, recalls_str = test.test(args, val_ds, model)
         print("recalls: ", recalls)
-        # continue
 
     sorted_models.sort(key=compare, reverse=True)
     greedy_soup_ingredients = [sorted_models[0][0]]
