@@ -5,10 +5,11 @@ import torch
 from datetime import datetime
 import parser
 
-def load_model(path, args):
+def load_model(model_path,args):
     model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
-    model_state_dict = torch.load(path)
+    model_state_dict = torch.load(model_path)
     
+    model.load_state_dict(delete_discriminator_layer(model_state_dict))
     return model
 
 def greedy_soup(models_list, val_folder, args):
@@ -21,7 +22,9 @@ def greedy_soup(models_list, val_folder, args):
         model = model.eval()
        
         sorted_models.append((model, val))
-        continue
+        recalls, recalls_str = test.test(args, val_ds, model)
+        print(recalls)
+        #continue
 
     sorted_models.sort(key=compare, reverse=True)
     greedy_soup_ingredients = [sorted_models[0][0]]
@@ -49,20 +52,29 @@ def greedy_soup(models_list, val_folder, args):
             greedy_soup_params = potential_greedy_soup_params
             print(f'Adding to soup.')
     experiment_name= "sample_soup"
-    torch.save(greedy_soup_params, f"soup.pth")
+    torch.save(greedy_soup_params, f"{experiment_name}.pth")
 
 
 def compare(m1):
     return m1[1]
 
+def delete_discriminator_layer(model):
+    if "discriminator.1.weight" in model:
+            del model["discriminator.1.weight"]
+            del model["discriminator.1.bias"]
+            del model["discriminator.3.weight"]
+            del model["discriminator.3.bias"]
+            del model["discriminator.5.weight"]
+            del model["discriminator.5.bias"]
+    return model
 
 if __name__ == "__main__":
 
     args = parser.parse_arguments(is_training=False)
 
     base_path = "model/{}"
-    models_directories=["cosface/cosface_best_model.pth","ablation_augmentation/erasing_full.pth","ablation_augmentation/gblur_occlusion_full.pth"]
-    val_rec = [52.4,61.0,53.3,50.5,47.6]
+    models_directories=["cosface/cosface_best_model.pth","sphereface/sphereface_best_model.pth", "arcface/arcface_best_model.pth"]
+    val_rec = [52.2,49.7,49.7]
     models_list = []
     for idx, model_path in enumerate(models_directories):
         m = load_model(base_path.format(model_path),args)
