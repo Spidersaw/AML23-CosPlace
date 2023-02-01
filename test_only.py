@@ -10,7 +10,7 @@ import torchvision.transforms as T
 
 import test
 import util
-import parser
+import our_parser
 import commons
 import cosface_loss
 import augmentations
@@ -20,7 +20,7 @@ from datasets.train_dataset import TrainDataset
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
-args = parser.parse_arguments(is_training=False)
+args = our_parser.parse_arguments(is_training=False)
 start_time = datetime.now()
 output_folder = f"logs/{args.save_dir}/{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
 best_model = args.best_model #path to best model: "AML23-Cosplace/model/results/best_..."
@@ -33,6 +33,7 @@ logging.info(f"The outputs are being saved in {output_folder}")
 #### Model
 model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
 
+
 model = model.to(args.device).train()
 
 
@@ -42,6 +43,15 @@ logging.info(f"Test set: {test_ds}")
 
 #### Test best model on test set
 best_model_state_dict = torch.load(best_model)
+
+if args.grl == True:
+        del best_model_state_dict["domain_discriminator.1.weight"]
+        del best_model_state_dict["domain_discriminator.1.bias"]
+        del best_model_state_dict["domain_discriminator.3.weight"]
+        del best_model_state_dict["domain_discriminator.3.bias"]
+        del best_model_state_dict["domain_discriminator.5.weight"]
+        del best_model_state_dict["domain_discriminator.5.bias"]
+        
 model.load_state_dict(best_model_state_dict)
 
 logging.info(f"Now testing on the test set: {test_ds}")
