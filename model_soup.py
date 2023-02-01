@@ -3,7 +3,7 @@ import test
 from model import network
 import torch
 from datetime import datetime
-import parser
+import our_parser
 
 def load_model(model_path,args):
     model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
@@ -70,7 +70,7 @@ def delete_discriminator_layer(model):
 
 if __name__ == "__main__":
 
-    args = parser.parse_arguments(is_training=False)
+    args = our_parser.parse_arguments(is_training=False)
 
     base_path = "model/{}"
     models_directories=["ablation_augmentation/base_model.pth","ablation_augmentation/gblur_model.pth","ablation_augmentation/grayscale_model.pth","ablation_augmentation/hflip_model.pth","ablation_augmentation/occlusion_model.pth","ablation_augmentation/grayscale_occlusion_model.pth","ablation_augmentation/grayscale_gblur.pth","ablation_augmentation/gblur_occlusion_full.pth","ablation_augmentation/all_models.pth"]
