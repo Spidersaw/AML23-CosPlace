@@ -134,7 +134,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
                                             pin_memory=(args.device == "cuda"), drop_last=True) if args.grl == True else None
     
     dataloader_iterator = iter(dataloader)
-    domain_adapt_dataloader_iterator = iter(domain_adapt_dataloader)
+    domain_adapt_dataloader_iterator = iter(domain_adapt_dataloader) if args.grl == True else None
     model = model.train()
     
     epoch_losses = np.zeros((0, 1), dtype=np.float32)
