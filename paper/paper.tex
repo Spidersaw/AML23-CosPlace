@@ -5,9 +5,9 @@
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
 %%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
-\usepackage[review]{cvpr}      % To produce the REVIEW version
+%\usepackage[review]{cvpr}      % To produce the REVIEW version
 %\usepackage{cvpr}              % To produce the CAMERA-READY version
-%\usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+\usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
 
 % Include other packages here, before hyperref.
 \usepackage{graphicx}
@@ -45,101 +45,244 @@
 \begin{document}
 
 %%%%%%%%% TITLE - PLEASE UPDATE
-\title{Visual Geolocaslization:
-mapping images o GPS}
+\title{Visual Geo-Localization:
+mapping images to GPS}
 
 \author{Cambria Paolo - s301164\\
 Politecnico di Torino\\
 {\tt\small paolocambria@studenti.polito.it}
 \and
-Ciciriello Giuseppe - 301953\\
+Ciciriello Giuseppe - s301953\\
 Politecnico di Torino\\
 {\tt\small giuseppe.ciciriello@studenti.polito.it}
 \and
-Testa Mario - 292630\\
+Testa Mario - s292630\\
 Politecnico di Torino\\
 {\tt\small mario.testa@studenti.polito.it}
 }
+
 \maketitle
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-In this work, we develop a theoretical and experimental framework to study the effect of CosFace loss function to localize unseen images. Our theory extract the N-top retrieved images, with their geo-tag, the retrieval is performed as a k-Nearest Neighbour search. Finally, we conduct a thorough ablation study of the loss function by changing it with SphereFace and ArcFace loss functions. We then conducted experiments on image recognition benchmarks.
-%   The ABSTRACT is to be in fully justified italicized text, at the top of the left-hand column, below the author and affiliation information.
-%   Use the word ``Abstract'' as the title, in 12-point Times, boldface type, centered relative to the column, initially capitalized.
-%   The abstract is to be in 10-point, single-spaced type.
-%   Leave two blank lines after the Abstract, then begin the main text.
-%   Look at previous CVPR abstracts to get a feel for style and length.
+Visual Geo-localization (VG) is the task of estimating the position where a given photo was taken by comparing it with a large database of images of known locations.
+In this work, we investigate the results of CosPlace~\cite{Berton_CVPR_2022_CosPlace} in the task of Visual Geo-Localization. Their method casts the training as a classification problem and achieves state-of-the-art performances on a wide range of datasets and domain changes. We conducted a thorough ablation study of the loss function by comparing it with SphereFace and ArcFace loss functions and, finally, we carried out experiments on Domain Adaptation and Model Ensemble to try reach better benchmarks.
+[TODO REVIEW FINALE]
+Dataset, code and trained models are available for research purposes at: \newline
+\url{https://github.com/Spidersaw/AML23-CosPlace/}
 \end{abstract}
+
+
 
 %%%%%%%%% BODY TEXT
 \section{Introduction}\label{sec:introduction}
-Visual geo-localization (VG) [TODO CITE] is one of the most promising approaches in the field of computer vision [TODO CITE] and image localization,
-due to his importance in applications such as autonomous driving [TODO CITE C. McManus, W. Churchill, W. Maddern, A. Stewart, and
-P. Newman. Shady dealings: Robust, long-term visual localisation using illumination invariance. In Proc. Intl. Conf. on
-Robotics and Automation, 2014] or even augmented reality [TODO CITE 47 S. Middelberg, T. Sattler, O. Untzelmann, and L. Kobbelt.
-Scalable 6-DOF localization on mobile devices. In Proc.
-ECCV, 2014].
+Visual geo-localization (VG) is one of the most promising approaches in the field of computer vision and image localization,
+due to his importance in applications such as autonomous driving~\cite{6906961} or even augmented reality~\cite{middelberg}.
 VG usually consists of a place recognition task: given a query image of a place, its geographical location has to be roughly recognized and retrieved
 by finding the closest database geo-tagged images usually with a tolerance of few meters. 
 This task is extremely challenging due to the intrinsic dynamism of public places and different problems must be taken in account:
-there are a lot of moving objects which determine occlusion, enviromental changes, different illuminations during daylight and night time, season changing.
-Furthermore, most of the recent learning based VG methods focus on recognizing the location of images in a relatively small sized geographical area (e.g. a neighborhood), 
-which is not enough for concrete applications such as autonomous driving [TODO CITE] that operate in much larger areas such as whole cities. 
+there are a lot of moving objects which determine occlusion, environmental changes, different illuminations during daylight and night time, season changing.
+Furthermore, most of the recent learning based VG methods focus on recognizing the location of images in a relatively small sized geographical area (\eg a neighborhood), 
+which is not enough for real-world applications which are posed to operate at much larger scale (\eg whole cities).
 \newline
-\textbf{Dataset}
-To achieve a VG task on a wider geographical area, a large representative dataset is required and as underlined by [TODO CITE GBERTON] the majority of 
-current datasets are either too small in the geographical coverage, or too sparse [TODO CITE]. Moreover, those datasets split the collected images into 
+\textbf{Non-representative datasets.}
+To achieve a VG task on a wider geographical area, a large representative dataset is required and, as underlined by~\cite{Berton_CVPR_2022_CosPlace}, the majority of 
+current datasets are either too small in the geographical coverage~\cite{netvlad,lidards,kittids}, or too sparse \cite{oxfds, mapillary}. Moreover, those datasets split the collected images into 
 disjoint sets for training and inference and this not suits a realistic use case, since the search query might be often an already seen place.
 For this reason it is recommendable to use the whole dataset to train the model, given also the cost of collecting the images for a consistent dataset.
-[TODO dire di SF-XL e Xs? e toky onight??]
 \newline
 \textbf{Training scalability}
-A such large dataset it's not so easy to exploit for training effectively a model. Many of the recent SOTA (state-of-the-art) methods take advantage
-of contrastive learning methods [TODO CITE], which can often depend on contrasting positive to negative examples across the training dataset [TODO CITE],
-a costly operation in terms of computation. 
-[TODO VALUTARE SE CITARE https://arxiv.org/pdf/1702.01238.pdf]
-[TODO citare gberton e dire che funziona su grandi paper]
-CosPlace [TODO citare] is an highly scalable training method, properly designed to work on larger dataset in the field of Geo-localization, in order to 
-overcome the costly computational needs required in this field and to successfully exploit such enormous amount of data to reach 
-SOTA results with compact descriptors.
+Having access to a massive amount of data raises the question of how to use it effectively for training. Many of the recent SOTA (state-of-the-art) methods take advantage
+of contrastive learning ~\cite{netvlad, adageo}, which can often depend on contrasting positive to negative examples across the training dataset, a costly operation in terms of computation. CosPlace~\cite{Berton_CVPR_2022_CosPlace}, instead, addresses this limitation by using:
+\begin{itemize}
+    \item a new large-scale and dense dataset, called San Francisco eXtra Large (SF-XL), which includes multi-domain queries.
+    \item a highly scalable training method, properly designed to work on large dataset, based on a classification task to produce a model that will later be used to extract descriptors for the retrieval
+\end{itemize}
+successfully reaching SOTA results with compact descriptors.
 \newline
 \textbf{Contributions}
-In this paper we want to investigate how the work of [TODO citare Berton] can be improved for place recognition tasks.
-In particular we focus to generally improve the recall [todo explain?] on the SF-XS dataset [TODO citare dataset / aggiungerlo] and more specifically
-on a dataset in completely different brightness conditions such as Tokyo-Night [TODO CITARE DATASET / AGGIUNGERLO].
-Furthermore, we want to assess how CosPlace [TODO CITARE] behaves when the data quality is scarce, e.g. for occlusion and blurry photos.
+In this paper we want to investigate how the work of~\cite{Berton_CVPR_2022_CosPlace} can be improved for place recognition tasks, but using a smaller version of SF-XL dataset (called SF-XS) for the training, due to our limited resources.
+In particular we focus on trying to:
+\begin{itemize}
+    \item generally improve the recalls on SF-XS and Tokyo-XS (a smaller version of Tokyo 24/7~\cite{tokyo247}), even with the help of ensembles to concatenate the descriptors of different models.
+    \item improve robustness to domain shift by borrowing techniques from the field of domain adaptation~\cite{adageo}, and testing the results on a dataset which only contains night images, called Tokyo-Night (a filtered version of Tokyo-XS).
+    \item assess how CosPlace behaves when data quality is scarce (\eg occlusion and blurry photos). 
+\end{itemize} 
 
-Our contribution consists of:
-[TODO listare le contributions dopo che abbiamo i risultati ]
 [TODO conclusioni rapide]
 
 %-------------------------------------------------------------------------
-\section{Related Works}\label{sec:relatedworks}
-Visual geolocalization on large scale is commonly considered as an image retrieval task, in which the correctness is determined by an established
-tolerance (usually 25 meters) from the query's ground truth position [TODO CITE].    
-One of the most representative study in this field is NetVLAD [TODO CITE], which introduces the VLAD pooling layer  [TODO RIVEDERE FRASE copiata da GBerton]
-that pools extracted descriptors into a fixed image representation whose parameters are learnable via back-propagation.
-The retrieval task is performed by using the learned embeddings produced by a feature extraction backbone equipped with a head that implements VLAD pooling.
-[/TODO]
-[TODO aggiungere tutta la prte delle loss altrui con contrastive learning]
-[TODO parlare bene di cosplace]
+
+\begin{figure*}
+  \centering
+  \begin{subfigure}{1.0\linewidth}
+    \centering
+    \fbox{ \includegraphics[width=\dimexpr\textwidth-2\fboxrule-2\fboxsep]{assets/architecture.png}}
+    \caption{The proposed architecture. First, a domain-driven data augmentation method is used to generate a labeled pseudo-target dataset from the source dataset and just 5 unlabeled target images. Then, the source dataset, pseudo-target dataset, and the 5 unlabeled target images are used to train the network that extracts the image descriptors. This network leverages an aggregation module and a domain adaptation module to provide robustness to shifting.}
+    \label{fig:our_architecture}
+  \end{subfigure}
+  \hfill
+\end{figure*}
+
 %-------------------------------------------------------------------------
-\section{Experiments}\label{sec:experiments}
-\subsection{Implementation Details}
-[TODO aggiungere roba su architettura cosplace]
-\subsection{Ablation}
-\textbf{Augmentation Pipeline}
-[TODO DA RIFINIRE]
-To improve the  ... we conducted a study on the augmentation pipeline by implementing 4 new augmentations on the images with a probability of 0.25 and a custom seed for
-reproducibily purposes.
-Due to the computational requirements, we were only able to perform this ablation on SF-XXS dataset, the results are reported below in table [TODO ADD TABLE REF]:
-[TODO AGGIUNGERE TABLE]
+\section{Related Works}\label{sec:relatedworks}
+\textbf{Visual geo-localization as image retrieval.} Visual geolocalization on large scale is commonly considered as an image retrieval task, in which the correctness is determined by an established
+tolerance (usually 25 meters) from the query's ground truth position~\cite{netvlad, adageo}.    
+One of the most representative study in this field is NetVLAD~\cite{netvlad}, which introduces a VLAD layer, which has parameters learnable with back-propagation, that pools descriptors extracted from a CNN backbone into a fixed image representation.
+\newline
+\textbf{Visual geo-localization as classification.}
+An alternative approach to visual geo-localization is to consider it a classification problem, as done in~\cite{Berton_CVPR_2022_CosPlace}. Most of methods of this kind, divide the geographical area of interest in cells and group the database of images in classes according to their cell, which has a big limitation: nearly identical images may be assigned to different classes due to quantization errors.
+CosPlace, instead, proposes to train the model only using groups of non adjacent classes and iterates over them while using CosFace~\cite{cosface} as a scalable loss.
+\newline
+\textbf{Deep Face Recognition.}
+In deep face recognition (FR) problem under open-set protocol, ideal face features are expected to have smaller maximal intra-class distance than minimal inter-class distance under a suitably chosen metric space. Different methods~\cite{sphereface, cosface, arcface} have shown how learning angularly discriminative features on a hypersphere manifold with an adjustable margin helps to improve accuracy on both verification and identification tasks. The most representative studies in this field are SphereFace~\cite{sphereface} which uses a multiplicative angular margin inside the loss function, CosFace~\cite{cosface} which applies an additive cosine margin directly to the target logits and ArcFace~\cite{arcface} which applies an angular margin that exactly corresponds to the geodesic distance. [TODO Non mi piace tanto com'è scritta la descrizione di sphere, cos e arc...]
+\newline
+\textbf{Unsupervised domain adaptation.}
+Unsupervised domain adaptation attempts to reduce the shift between the source and target distribution of the data by relying only on labeled source data and unlabeled target data. For example, the source domain can consist of synthetic images and their corresponding pixel-level labels (\eg for semantic segmentation), and the target can be real images with no ground-truth annotations. One approach for unsupervised domain adaptation is to learn domain-invariant features from the data, it was introduced by~\cite{grl} and is based on a domain discriminator network with a gradient reversal layer (GRL) that forces feature extractor to produce domain-invariant representations. This has been used by AdaGeo-Lite~\cite{adageo} architecture, which combines a domain-driven data augmentation module that uses a non-learned style transfer method (called FDA~\cite{fda}) producing a pseudo-target labeled dataset, with a network that produces domain-invariant image descriptors by setting up a min-max game where the discriminator tries to minimize the domain classification loss given three datasets (source, pseudo-target and a few samples from the target domain), while the feature extractor acts as an adversary to the discriminator.
+%-------------------------------------------------------------------------
+\section{Method}\label{sec:experiments}
+In this section, we present different approaches we have used to try improving CosPlace results. We started from its original implementation and decided to add custom augmentation to help boost its ability to learn embeddings even on sub-optimal picture quality. Then, we moved our focus to domain shift, given that test-images are likely to come from different domains than the source and that the domain shift in the dataset of interest Tokyo-Night is caused by illumination (day/night), we tried adapting the method used by~\cite{adageo} combined to CosPlace in order to create a modular architecture composed of two parts:
+\begin{itemize}
+    \item A non-learned domain-driven data augmentation module that transfer the style of the target domain (night) to the source images.
+    \item A network that produces the image descriptors, composed of a CNN, an aggregation layer and domain adaptation module.
+\end{itemize}
+At the end, we tried averaging the weights of models trained in the previous steps using Model Soups' approach~\cite{modelsoup} to improve recalls.
+\subsection{CosPlace}
+Our work starts from CosPlace, an innovative approach in the field of visual geo-localization~\cite{Berton_CVPR_2022_CosPlace}. CosPlace casts the network training as an image classification problem: it partition the geographical area of interest in oriented cells, representing different classes, using UTM coordinates $\{east,north\}$\footnote{UTM coordinates are defined by a system used to identify locations on earth in meters, where 1 UTM unit corresponds to 1 meter. They can be extracted from GPS coordinates (i.e., latitude and longitude) and allow approximating a restricted area of the earth’s surface on a flat surface.} and orientation/heading $\{heading\}$. The extent of each class in terms of position and heading is defined by two parameters $M$ and $\alpha$, respectively. Then, it iteratively considers subsets of these cells (called groups $G_{uvw}$) to train the network.
+These groups are generated by fixing the minimum spatial separation that two classes of the same group should have, either in terms of translation or orientation. For this reason, they introduced two parameters: $N$ controls the minimum number of cells between two classes of the same group, and $L$ is the equivalent for the orientation.
+Therefore, we have trained sequentially over the groups as:
+\begin{equation}
+  \mathcal{L}_{cosPlace} = \mathcal{L}_{lmcl}(G_{uvw})
+  \label{eq:cosplace_full}
+\end{equation}
+where $\mathcal{L}_{lmcl}$ is the Large Margin Cosine Loss as defined in~\cite{cosface}, and $u \in \{0,...,N\}, v \in \{0,...,N\}, w \in \{0,...,L\}$ represent the different values of $\{east, north, heading\}$. In our case, due to limitations in compute availability, we could only train each epoch on the same group $G$, so:
+\begin{equation}
+  \mathcal{L}_{cosPlace} = \mathcal{L}_{lmcl}(G)
+  \label{eq:cosplace_our}
+\end{equation}
+At validation and test time, we used the model generated not to classify the query, but rather to extract image descriptors as in~\cite{cosface} for a classic retrieval over the database. This allows for the model to be used also on other datasets from unseen geographical areas, like Tokyo-XS and the smaller Tokyo-Night.
+\subsection{Custom Augmentations}
+To assess the robustness of CosPlace~\cite{Berton_CVPR_2022_CosPlace} and improve its capability to learn a good embedding space even on sub-optimal picture quality we conducted a study on the augmentation pipeline already present in the original implementation (Color Jitter, RandomResizedCrop, Normalize) that we named \textbf{base} for our ablation, by adding 4 new augmentations on the images with a probability of 25\% and a fixed seed for reproducibility purposes. Those augmentations consisted of:
+\begin{itemize}
+  \item Gaussian Blur
+  \item Gray scale
+  \item Horizontal Flip
+  \item Erasing
+\end{itemize}
+[TODO] Insert here description of the custom augmentations made, how they were implemented, citing where inspiration was taken.
+\subsection{FDA and GRL}
+\textbf{FDA}
+The purpose of the domain-driven data augmentation (DDDA) module is to find a mapping $D_s \mapsto D_{pt}$ from the source domain to a pseudo-target domain that better approximates the target domain, i.e., $D_{pt} \approx D_t$. This mapping can then be applied to the source dataset $X_s$ to generate a new labeled dataset with pseudo-target images $X_{pt}$, it is a data augmentation technique and is performed only once, offline. Inspired by~\cite{fda, adageo}, we propose a DDDA method based on Fourier Domain Adaptation (FDA) to generate a pseudo-target dataset $X_{pt}$ given two randomly sampled images $x^s$ and $x^t$ from source and target. First, the low frequency part of the amplitude of $x^s$ is replaced by that of $x^t$, then the modified spectral representation of the source is mapped back to an image whose content is the same as $x^s$ but will resemble the appearance of a sample from the target distribution.
+\newline
+Afterward, we use both $X_s$ and $X_{pt}$ to train the descriptor extraction network, leading to a more robust model.
+In order for the retrieval to work well across domains it is important that the embeddings produced by the descriptor extraction network are domain agnostic, i.e., they do not encode domain-specific information. We achieve this by using a domain discriminator which receives embeddings from the three domains $D_s$, $D_pt$, and $D_t$. The discriminator is composed of two fully connected layers, and its goal is to classify the domain to which the embeddings belong. Just before the discriminator, there is a gradient reversal layer (Ganin and Lempitsky, 2015) that in the forward pass acts as an identity transform, while in the backward pass multiplies the gradient by -$\lambda$, where $\lambda > 0$. The use of this layer effectively sets up a min-max game, where the discriminator tries to minimize the domain classification loss, that is a cross-entropy loss $L_{CE}$, while the feature extractor learns to produce domain-invariant embeddings, acting as an adversary to the discriminator.
+
+\textbf{GRL.} We define a deep feed-forward architecture that for each input $x$ predicts its class $y \in Y$ and its domain label $d \in \{0, 1\}$, depending if it is an image from day or night.
+[TODO] To finish...
+
+\subsection{Model Soup}
+[TODO] Insert here description of how Model Soup has been implemented.
+
+\section{Experiments}
+\textbf{Experiment with the Baseline.}
+We started running some experiments to better understand how the training procedure worked. The backbone used was a ResNet-18 pre-trained on ImageNet with GeM pooling~\cite{finetuning} and due to limitations in compute availability (\eg Colab time and GPU limitations), we trained the baseline model for only 3 epochs to finally end up with the results in \cref{tab:baseline}:
 
 
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{@{}cccc@{}}
+    \toprule
+    & SF-XS(test) & Tokyo-XS & Tokyo-Night\\
+    \midrule
+    R@1/R@5 & \textbf{52.2/66.3} & \textbf{69.5/84.8} & \textbf{49.5/72.4} \\
+    R@10 & 71.8 & 89.2 & 79.0\\
+    R@20 & 76.3 & 92.7 & 84.4\\
+    \bottomrule
+  \end{tabular}
+  \caption{Baseline results, values refer to recall@K, for K=\{1, 5, 10, 20\}}
+  \label{tab:baseline}
+\end{table}
+
+
+\textbf{Ablation study when changing the angular loss function.}
+Once we were familiar with the baseline, we started making a few modifications to the model, specifically to the loss function. Standard CosPlace uses the Large Cosine similarity loss~\cite{cosface}, so we've tried replacing it with two other alternative cosine based losses: SphereFace~\cite{sphereface} and ArcFace~\cite{arcface}.
+We trained the modified version on SF-XS and the results in \cref{tab:lossablation} show how CosFace loss performs better than the competition on the biggest dataset (SF-XS), while on smaller ones (Tokyo-XS and Tokyo-Night) SphereFace and ArcFace actually get better recall values. This isn't what we expected at first, but further analysis suggest us that the implementations we've use for the last two losses might converge earlier than the original CosFace, so with a low number of epochs they perform better.
+It would be interesting to have some trials with the full SF-XL dataset and a greater number of epochs to better understand the behavior in the long run.
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{@{}cccc@{}}
+    \toprule
+     & SF-XS(test) & Tokyo-XS & Tokyo-Night\\
+    \midrule
+    CosPlace with\\ CosFace & \textbf{52.2/66.3} & 69.5/84.8 & 49.5/72.4 \\
+    CosPlace with\\ SphereFace & 49.7/64.2 & \textbf{70.2/84.8} & \textbf{59.0/75.2} \\
+    CosPlace with\\ ArcFace & 49.7/61.1 & 69.5/81.6 & 56.2/64.8\\
+    \bottomrule
+  \end{tabular}
+  \caption{Results of our ablation study when changing the angular loss function from CosFace to SphereFace and ArcFace, the values refer to Recall@1/Recall@5.}
+  \label{tab:lossablation}
+\end{table}
+
+\textbf{Augmentation Pipeline.}
+Due to the high computational requirements, we were only able to conduct this ablation efficiently on SF-XS dataset with a low amount of iterations per epochs fixed to 5000. The results reporting recalls are reported in the table \ref{tab:augmentations-pp} below:
+
+% ABLATION AUGMENTATIONS
+
+\begin{table}[hbp] % Add the following just after the closing bracket on this line to specify a position for the table on the page: [h], [t], [b] or [p] - these mean: here, top, bottom and on a separate page, respectively
+\centering % Centers the table on the page, comment out to left-justify
+\begin{tabular}{l c c c c c} % The final bracket specifies the number of columns in the table along with left and right borders which are specified using vertical bars (|); each column can be left, right or center-justified using l, r or c. To specify a precise width, use p{width}, e.g. p{5cm}
+\toprule % Top horizontal line
+Augmentations & R@1 & R@5 & R@10 & R@20\\ % Column names row
+\midrule % In-table horizontal line
+Base & 1.0\%  & 1.6\% & 1.9\% & 2.0\%  \\ 
++\{blur\} & 1.2\%  & 1.8\% & 2.0\% & 2.0\%  \\ 
++\{grayscale\} & 1.2\%  & 1.7\% & 1.9\% & 2.0\%  \\ 
++\{flip\} & 1.0\%  & 1.7\% & 1.8\% & 1.9\%  \\  
++\{erasing\} & 1.2\%  & 1.9\% & 1.9\% & 1.9\%  \\  
++\{grayscale, erasing\} & 1.1\%  & 1.9\% & 1.9\% & 2.0\%  \\  
++\{blur, grayscale\} & 1.1\%  & 1.9\% & 2.0\% & 2.0\%  \\  
++\{\textbf{blur, erasing}\} & 1.2\%  & 1.9\% & 2.0\% & 2.0\%  \\  
++\{blur, grayscale,\\ flip, erasing\} & 1.0\%  & 1.7\% & 2.0\% & 2.0\%  \\  
+
+\bottomrule % Bottom horizontal line
+\end{tabular}
+\smallskip 
+\caption{Evaluation of the impact in terms of recall of different augmentation pipelines for CosPlace compared to Base (Color Jitter, RandomResizedCrop, Normalize)
+} % Table caption, can be commented out if no caption is required
+\label{tab:augmentations-pp} % A label for referencing this table elsewhere, references are used in text as \ref{label}
+\end{table}
+
+The couple \textbf{blur, erasing} seems the best choice for the augmentation pipeline, since not only the model manages to show robustness to that data augmentation pipeline, but also improves.
+However, further investigations should be performed with a larger amount of data and a higher amount of iterations to understand if this is an improvement linked to a better generalization due to the lack of data. 
 [TODO guardare extension b]
+\newline
+
+\textbf{Unsupervised Domain Adaptation with FDA and GRL.}
+To evaluate the capability of our solution to generalize to unseen domains, specifically the night one, we compare the baseline, the unchanged architecture of the baseline trained with a dataset containing the source domain samples and target-domain samples generated with FDA, and the architecture with the domain discriminator module attached (FDA+GRL). In \cref{tab:fda+grl} we show the results for each method.
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{@{}cccc@{}}
+    \toprule
+    & SF-XS(test) & Tokyo-XS & Tokyo-Night\\
+    \midrule
+    Baseline & 52.2/66.3 & 69.5/84.8 & 49.5/72.4 \\
+    FDA & 50.5/65.4 & 67.0/85.7 & 47.6/72.4 \\
+    FDA+GRL & \textbf{53.7/66.5} & \textbf{70.5/84.8} & \textbf{53.3/73.3}\\
+    \bottomrule
+  \end{tabular}
+  \caption{Baseline results compared with FDA only and FDA+GRL (with $\alpha=0.1$)}
+  \label{tab:fda+grl}
+\end{table}
+
+From these results, we surpass the baseline in all the three datasets by using both FDA and GRL together, reaching a \~4\% improvement on Tokyo-night. This confirms that the newly generated model was able to produce "more" domain-invariant features than before. Better can be expected, as the shift between this domain and the source domain (StreetView) is extreme, with very dark images and with a strong yellow tones.
+
+\section{Conclusions}
+[TODO] Insert here conclusions and possible further implementations.
 
 
+\section{Stuff to copy for Latex}
 
 \subsection{The ruler}
 The \LaTeX\ style defines a printed ruler which should be present in the version submitted for review.
