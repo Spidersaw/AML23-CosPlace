@@ -153,9 +153,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
         classifiers_optimizers[current_group_num].zero_grad()
         
         if not args.use_amp16:
-            descriptors = model(images)
-            output = classifiers[current_group_num](descriptors, targets)
-            loss = criterion(output, targets)
+            descriptors = model(images) #feature extraction -> theta_f
+            output = classifiers[current_group_num](descriptors, targets) #output probabilities for each class -> theta_y
+            loss = criterion(output, targets) #scalar value that represents the difference between the predicted and true class probabilities.
             loss.backward()
             '''
             Domain Adaptation here
@@ -167,7 +167,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
                 domain_adapt_loss = domain_adapt_criterion(domain_adapt_output, domain_adapt_labels)
                 domain_adapt_loss = domain_adapt_loss * alpha
                 domain_adapt_loss.backward()
-                domain_adapt_loss = domain_adapt_loss.item()
+                domain_adapt_loss = domain_adapt_loss.item() #.item() returns tensor value as a standard number
                 epoch_grl_loss += domain_adapt_loss
                 del domain_adapt_images, domain_adapt_output
 
