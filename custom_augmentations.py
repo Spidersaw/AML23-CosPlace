@@ -21,7 +21,7 @@ class RandomGaussianBlur(torch.nn.Module):
 
     """
 
-    def __init__(self, kernel_size, sigma=(0.1, 2.0),p=0.5):
+    def __init__(self, kernel_size, sigma=(0.2, 4.0),p=0.5):
         super().__init__()
         self.p=p
         self.kernel_size = kernel_size

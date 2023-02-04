@@ -73,8 +73,8 @@ if __name__ == "__main__":
     args = our_parser.parse_arguments(is_training=False)
 
     base_path = "model/{}"
-    models_directories=["ablation_augmentation/base_model.pth","ablation_augmentation/gblur_model.pth","ablation_augmentation/grayscale_model.pth","ablation_augmentation/hflip_model.pth","ablation_augmentation/occlusion_model.pth","ablation_augmentation/grayscale_occlusion_model.pth","ablation_augmentation/grayscale_gblur.pth","ablation_augmentation/gblur_occlusion_full.pth","ablation_augmentation/all_models.pth"]
-    val_rec = [1.0, 1.2, 1.2, 1.0, 1.2, 1.1, 1.1, 1.2, 1.0]
+    models_directories=["ablation_aug_hfull/all aug/model_all_hfull.pth", "ablation_aug_hfull/base/model_base_hfull.pth", "ablation_aug_hfull/blur+erasing/model_be_hfull.pth", "ablation_aug_hfull/blur+grayscale/model_bg_hfull.pth", "ablation_aug_hfull/erasing/model_e_hfull.pth", "ablation_aug_hfull/erasing+grayscale/model_eg_hfull.pth", "ablation_aug_hfull/gblur/model_g_hfull.pth", "ablation_aug_hfull/grayscale/model_g_hfull.pth", "ablation_aug_hfull/hflip/model_h_hfull.pth", "fda_only/fda_only.pth", "fda+grl/fda+grl.pth"]
+    val_rec = [78.0, 78.1, 78.0, 78.0, 77.9, 77.9, 78.1, 78.0, 78.1, 81.9, 81.9]
     models_list = []
     for idx, model_path in enumerate(models_directories):
         m = load_model(base_path.format(model_path),args)

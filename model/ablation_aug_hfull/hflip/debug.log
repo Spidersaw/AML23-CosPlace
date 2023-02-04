@@ -1,0 +1,30 @@
+2023-02-02 16:30:37   train_only.py --dataset_folder /content/small --groups_num 1 --epochs_num 3 --batch_size 16 --iterations_per_epoch 5000 --loss_function cosface --rerasing 0 --rgrayscale 0 --gblur 0
+2023-02-02 16:30:37   Arguments: Namespace(L=2, M=10, N=5, alpha=30, augmentation_device='cuda', backbone='resnet18', batch_size=16, best_model=None, brightness=0.7, classifiers_lr=0.01, contrast=0.7, dataset_folder='/content/small', device='cuda', epochs_num=3, fc_output_dim=512, gblur=0.0, grl=False, groups_num=1, hflip=0.25, hue=0.5, infer_batch_size=16, iterations_per_epoch=5000, loss_function='cosface', lr=1e-05, min_images_per_class=10, num_workers=8, positive_dist_threshold=25, random_resized_crop=0.5, rerasing=0.0, resume_model=None, resume_train=None, rgrayscale=0.0, saturation=0.7, save_dir='default', seed=0, test_set_folder='/content/small/test', train_set_folder='/content/small/train', use_amp16=False, val_set_folder='/content/small/val')
+2023-02-02 16:30:37   The outputs are being saved in AML23-CosPlace/model/results/best_2023-02-02_16-30-37
+2023-02-02 16:30:37   Train only layer3 and layer4 of the resnet18, freeze the previous ones
+2023-02-02 16:30:38   There are 1 GPUs and 2 CPUs.
+2023-02-02 16:30:39   Using cached dataset cache/small_M10_N5_mipc10.torch
+2023-02-02 16:30:39   Using 1 groups
+2023-02-02 16:30:39   The 1 groups have respectively the following number of classes [5965]
+2023-02-02 16:30:39   The 1 groups have respectively the following number of images [59650]
+2023-02-02 16:30:39   Start training ...
+2023-02-02 16:30:39   There are 5965 classes for the first group, each epoch has 5000 iterations with batch_size 16, therefore the model sees each class (on average) 13.4 times per epoch
+2023-02-02 16:30:39   Validation set: < val - #q: 7993; #db: 8015 >
+2023-02-02 16:49:25   Epoch 00 in 0:18:45, loss = 14.4291
+2023-02-02 16:49:25   Extracting database descriptors for evaluation/testing
+2023-02-02 16:50:27   Extracting queries descriptors for evaluation/testing using batch size 1
+2023-02-02 16:52:11   Calculating recalls
+2023-02-02 16:52:12   Epoch 00 in 0:21:32, < val - #q: 7993; #db: 8015 >: R@1: 69.4, R@5: 81.4
+2023-02-02 17:10:55   Epoch 01 in 0:18:42, loss = 7.2904
+2023-02-02 17:10:55   Extracting database descriptors for evaluation/testing
+2023-02-02 17:11:56   Extracting queries descriptors for evaluation/testing using batch size 1
+2023-02-02 17:13:39   Calculating recalls
+2023-02-02 17:13:40   Epoch 01 in 0:21:27, < val - #q: 7993; #db: 8015 >: R@1: 75.5, R@5: 85.6
+2023-02-02 17:32:25   Epoch 02 in 0:18:44, loss = 5.5825
+2023-02-02 17:32:25   Extracting database descriptors for evaluation/testing
+2023-02-02 17:33:25   Extracting queries descriptors for evaluation/testing using batch size 1
+2023-02-02 17:35:08   Calculating recalls
+2023-02-02 17:35:09   Epoch 02 in 0:21:28, < val - #q: 7993; #db: 8015 >: R@1: 78.1, R@5: 87.7
+2023-02-02 17:35:10   Trained for 03 epochs, in total in 1:04:33
+2023-02-02 17:35:10   Best model is saved in AML23-CosPlace/model/results/best_2023-02-02_16-30-37/best_model.pth
+2023-02-02 17:35:10   Experiment finished (without any errors)
