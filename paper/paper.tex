@@ -73,7 +73,6 @@ Dataset, code and trained models are available for research purposes at: \newlin
 \end{abstract}
 
 
-
 %%%%%%%%% BODY TEXT
 \section{Introduction}\label{sec:introduction}
 Visual geo-localization (VG) is one of the most promising approaches in the field of computer vision and image localization,
@@ -111,18 +110,6 @@ In particular we focus on trying to:
 
 [TODO conclusioni rapide]
 
-%-------------------------------------------------------------------------
-
-\begin{figure*}
-  \centering
-  \begin{subfigure}{1.0\linewidth}
-    \centering
-    \fbox{ \includegraphics[width=\dimexpr\textwidth-2\fboxrule-2\fboxsep]{assets/architecture.png}}
-    \caption{The proposed architecture. First, a domain-driven data augmentation method is used to generate a labeled pseudo-target dataset from the source dataset and just 5 unlabeled target images. Then, the source dataset, pseudo-target dataset, and the 5 unlabeled target images are used to train the network that extracts the image descriptors. This network leverages an aggregation module and a domain adaptation module to provide robustness to shifting.}
-    \label{fig:our_architecture}
-  \end{subfigure}
-  \hfill
-\end{figure*}
 
 %-------------------------------------------------------------------------
 \section{Related Works}\label{sec:relatedworks}
@@ -130,15 +117,22 @@ In particular we focus on trying to:
 tolerance (usually 25 meters) from the query's ground truth position~\cite{netvlad, adageo}.    
 One of the most representative study in this field is NetVLAD~\cite{netvlad}, which introduces a VLAD layer, which has parameters learnable with back-propagation, that pools descriptors extracted from a CNN backbone into a fixed image representation.
 \newline
+
 \textbf{Visual geo-localization as classification.}
 An alternative approach to visual geo-localization is to consider it a classification problem, as done in~\cite{Berton_CVPR_2022_CosPlace}. Most of methods of this kind, divide the geographical area of interest in cells and group the database of images in classes according to their cell, which has a big limitation: nearly identical images may be assigned to different classes due to quantization errors.
 CosPlace, instead, proposes to train the model only using groups of non adjacent classes and iterates over them while using CosFace~\cite{cosface} as a scalable loss.
 \newline
+
 \textbf{Deep Face Recognition.}
 In deep face recognition (FR) problem under open-set protocol, ideal face features are expected to have smaller maximal intra-class distance than minimal inter-class distance under a suitably chosen metric space. Different methods~\cite{sphereface, cosface, arcface} have shown how learning angularly discriminative features on a hypersphere manifold with an adjustable margin helps to improve accuracy on both verification and identification tasks. The most representative studies in this field are SphereFace~\cite{sphereface} which uses a multiplicative angular margin inside the loss function, CosFace~\cite{cosface} which applies an additive cosine margin directly to the target logits and ArcFace~\cite{arcface} which applies an angular margin that exactly corresponds to the geodesic distance. [TODO Non mi piace tanto com'è scritta la descrizione di sphere, cos e arc...]
 \newline
+
 \textbf{Unsupervised domain adaptation.}
 Unsupervised domain adaptation attempts to reduce the shift between the source and target distribution of the data by relying only on labeled source data and unlabeled target data. For example, the source domain can consist of synthetic images and their corresponding pixel-level labels (\eg for semantic segmentation), and the target can be real images with no ground-truth annotations. One approach for unsupervised domain adaptation is to learn domain-invariant features from the data, it was introduced by~\cite{grl} and is based on a domain discriminator network with a gradient reversal layer (GRL) that forces feature extractor to produce domain-invariant representations. This has been used by AdaGeo-Lite~\cite{adageo} architecture, which combines a domain-driven data augmentation module that uses a non-learned style transfer method (called FDA~\cite{fda}) producing a pseudo-target labeled dataset, with a network that produces domain-invariant image descriptors by setting up a min-max game where the discriminator tries to minimize the domain classification loss given three datasets (source, pseudo-target and a few samples from the target domain), while the feature extractor acts as an adversary to the discriminator.
+
+%----------------------------------------------------------------
+
+
 %-------------------------------------------------------------------------
 \section{Method}\label{sec:experiments}
 In this section, we present different approaches we have used to try improving CosPlace results. We started from its original implementation and decided to add custom augmentation to help boost its ability to learn embeddings even on sub-optimal picture quality. Then, we moved our focus to domain shift, given that test-images are likely to come from different domains than the source and that the domain shift in the dataset of interest Tokyo-Night is caused by illumination (day/night), we tried adapting the method used by~\cite{adageo} combined to CosPlace in order to create a modular architecture composed of two parts:
@@ -147,6 +141,31 @@ In this section, we present different approaches we have used to try improving C
     \item A network that produces the image descriptors, composed of a CNN, an aggregation layer and domain adaptation module.
 \end{itemize}
 At the end, we tried averaging the weights of models trained in the previous steps using Model Soups' approach~\cite{modelsoup} to improve recalls.
+
+\begin{figure*}
+  \centering
+  \begin{subfigure}{0.58\linewidth}
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
+    \caption{Example of images from San Francisco XS dataset.}
+    \label{fig:short-a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.38\linewidth}
+    \fbox{\rule{0pt}{1.5in} \includegraphics[width=0.9\linewidth]{assets/no_images_per_class.jpeg}}
+    \caption{Numbers of images per class in San Francisco XS dataset.}
+    \label{fig:sfxs_density}
+  \end{subfigure}
+  \caption{Example of a short caption, which should be centered.}
+  \label{fig:short}
+\end{figure*}
+
+\subsection{Datasets}
+For our work, we have been provided with two datasets to experiment with: San Francisco eXtra Small (\textbf{SF-XS}) and Tokyo eXtra Small (\textbf{Tokyo-XS}). These datasets are respectively subsets of SF-XL~\cite{Berton_CVPR_2022_CosPlace} and Tokyo 24/7~\cite{tokyo247} purposely reduced for our convenience due to limitations in compute availability. SF-XS contains 59704 images for the train (both queries and database), 16008 for the evaluation (8015 as database, 7993 as queries) and 28191 for the test (27191 as database, 1000 as queries).
+Tokyo-XS only contains 13086 images for the test (12771 as database, 305 as queries).
+All these datasets are provided with labels that can be derived from the images' names as \textit{\{east, north, heading\}} and specifically for the training dataset, there are 5965 different classes, each one of them containing 10 images, as shown in \cref{fig:sfxs_density}.
+Finally, to understand if the changes applied to our model help in geolocalizing night images, we created a new dataset called \textbf{Tokyo-Night}: it is a subset of Tokyo-XS of which only the night images from queries are retained (1 out of 3, so 105 query images in total).
+
+
 \subsection{CosPlace}
 Our work starts from CosPlace, an innovative approach in the field of visual geo-localization~\cite{Berton_CVPR_2022_CosPlace}. CosPlace casts the network training as an image classification problem: it partition the geographical area of interest in oriented cells, representing different classes, using UTM coordinates $\{east,north\}$\footnote{UTM coordinates are defined by a system used to identify locations on earth in meters, where 1 UTM unit corresponds to 1 meter. They can be extracted from GPS coordinates (i.e., latitude and longitude) and allow approximating a restricted area of the earth’s surface on a flat surface.} and orientation/heading $\{heading\}$. The extent of each class in terms of position and heading is defined by two parameters $M$ and $\alpha$, respectively. Then, it iteratively considers subsets of these cells (called groups $G_{uvw}$) to train the network.
 These groups are generated by fixing the minimum spatial separation that two classes of the same group should have, either in terms of translation or orientation. For this reason, they introduced two parameters: $N$ controls the minimum number of cells between two classes of the same group, and $L$ is the equivalent for the orientation.
@@ -161,26 +180,72 @@ where $\mathcal{L}_{lmcl}$ is the Large Margin Cosine Loss as defined in~\cite{c
   \label{eq:cosplace_our}
 \end{equation}
 At validation and test time, we used the model generated not to classify the query, but rather to extract image descriptors as in~\cite{cosface} for a classic retrieval over the database. This allows for the model to be used also on other datasets from unseen geographical areas, like Tokyo-XS and the smaller Tokyo-Night.
-\subsection{Custom Augmentations}
-To assess the robustness of CosPlace~\cite{Berton_CVPR_2022_CosPlace} and improve its capability to learn a good embedding space even on sub-optimal picture quality we conducted a study on the augmentation pipeline already present in the original implementation (Color Jitter, RandomResizedCrop, Normalize) that we named \textbf{base} for our ablation, by adding 4 new augmentations on the images with a probability of 25\% and a fixed seed for reproducibility purposes. Those augmentations consisted of:
-\begin{itemize}
-  \item Gaussian Blur
-  \item Gray scale
-  \item Horizontal Flip
-  \item Erasing
-\end{itemize}
-[TODO] Insert here description of the custom augmentations made, how they were implemented, citing where inspiration was taken.
-\subsection{FDA and GRL}
-\textbf{FDA}
-The purpose of the domain-driven data augmentation (DDDA) module is to find a mapping $D_s \mapsto D_{pt}$ from the source domain to a pseudo-target domain that better approximates the target domain, i.e., $D_{pt} \approx D_t$. This mapping can then be applied to the source dataset $X_s$ to generate a new labeled dataset with pseudo-target images $X_{pt}$, it is a data augmentation technique and is performed only once, offline. Inspired by~\cite{fda, adageo}, we propose a DDDA method based on Fourier Domain Adaptation (FDA) to generate a pseudo-target dataset $X_{pt}$ given two randomly sampled images $x^s$ and $x^t$ from source and target. First, the low frequency part of the amplitude of $x^s$ is replaced by that of $x^t$, then the modified spectral representation of the source is mapped back to an image whose content is the same as $x^s$ but will resemble the appearance of a sample from the target distribution.
-\newline
-Afterward, we use both $X_s$ and $X_{pt}$ to train the descriptor extraction network, leading to a more robust model.
-In order for the retrieval to work well across domains it is important that the embeddings produced by the descriptor extraction network are domain agnostic, i.e., they do not encode domain-specific information. We achieve this by using a domain discriminator which receives embeddings from the three domains $D_s$, $D_pt$, and $D_t$. The discriminator is composed of two fully connected layers, and its goal is to classify the domain to which the embeddings belong. Just before the discriminator, there is a gradient reversal layer (Ganin and Lempitsky, 2015) that in the forward pass acts as an identity transform, while in the backward pass multiplies the gradient by -$\lambda$, where $\lambda > 0$. The use of this layer effectively sets up a min-max game, where the discriminator tries to minimize the domain classification loss, that is a cross-entropy loss $L_{CE}$, while the feature extractor learns to produce domain-invariant embeddings, acting as an adversary to the discriminator.
 
-\textbf{GRL.} We define a deep feed-forward architecture that for each input $x$ predicts its class $y \in Y$ and its domain label $d \in \{0, 1\}$, depending if it is an image from day or night.
-[TODO] To finish...
+\begin{figure*}
+  \centering
+  \begin{subfigure}{1.0\linewidth}
+    \centering
+    \fbox{ \includegraphics[width=\dimexpr\textwidth-2\fboxrule-2\fboxsep]{assets/architecture.png}}
+  
+  \end{subfigure}
+     \caption{The proposed architecture. First, a domain-driven data augmentation method is used to generate a labeled pseudo-target dataset from the source dataset and just 5 unlabeled target images. Then, the source dataset, pseudo-target dataset, and the 5 unlabeled target images are used to train the network that extracts the image descriptors. This network leverages an aggregation module and a domain adaptation module to provide robustness to shifting.}
+    \label{fig:our_architecture}
+  \hfill
+\end{figure*}
+
+
+\subsection{Custom Augmentations}
+To assess the robustness of CosPlace~\cite{Berton_CVPR_2022_CosPlace}, its capability to learn a good embedding space even on sub-optimal picture quality and try to find augmentations to achieve better generalization,
+we conducted a study on the augmentation pipeline already present in the original implementation following SFRS \cite{sfrs} during the training step (Color Jitter, RandomResizedCrop, Normalize) that we named \textbf{base}, by adding 4 new augmentations on the images after Color Jittering, with a probability of 25\% of being applied and a fixed seed for reproducibility purposes. Those augmentations consisted of:
+\begin{itemize}
+  \item \textbf{Gaussian Blur}\newline
+Blurring images can show the robustness of CosPlace on realistic use case in which the provided images are not always clear.
+  \item \textbf{Grayscale}\newline
+  In the context of place recognition Grayscale has already been successfully employed in \cite{grayscalecnn} to reduce the effect of illumination variation, which suits also our case.
+  \item \textbf{Horizontal Flip}\newline
+The datasets in use contain informations on orientation and heading of the images, applying an horizontal flip should prove consistency on the query images. 
+  \item \textbf{Erasing}\newline
+Randomly erasing an amount of pixels in the picture, can simulate the realistic case of occlusion and usually improves the CNN-based recognition models as \cite{reda}.
+\end{itemize}
+
+
+\begin{figure}[b]
+    \centering
+    \fbox{ 
+    \begin{tabular}{cc}
+  \includegraphics[width=35mm]{assets/source-example.jpg} &   \includegraphics[width=35mm]{assets/pseudo-example.jpg} \\
+  \end{tabular}
+  }
+    \caption{On the left the source image, on the right the pseudo-target image generated with FDA + saturation and temperature convertion.}
+    \label{fig:fda_show}
+\end{figure}
+
+\subsection{FDA and GRL}
+\textbf{Domain-Drive Data Augmentation.}
+The purpose of the domain-driven data augmentation (DDDA) module is to find a mapping $D_s \mapsto D_{pt}$ from the source domain to a pseudo-target domain that better approximates the target domain, i.e., $D_{pt} \approx D_t$. This mapping can then be applied to the source dataset $X_s$ to generate a new labeled dataset with pseudo-target images $X_{pt}$, it is a data augmentation technique and is performed only once, offline. Inspired by~\cite{fda, adageo}, we used a DDDA method based on Fourier Domain Adaptation (\textbf{FDA})~\cite{fda} to generate a pseudo-target dataset $X_{pt}$ given two randomly sampled images $x^s$ and $x^t$ from source and target. First, the low frequency part of the amplitude of $x^s$ is replaced by that of $x^t$, then the modified spectral representation of the source is mapped back to an image whose content is the same as $x^s$ but will resemble the appearance of a sample from the target distribution.
+Since the pseudo-target images generated didn't look as "night" as thought, for all the processed images, we reduced their saturation to 70\% and converted their temperature towards blue, to give them a colder appearance, as shown in~\cref{fig:fda_show}
+Afterward, we use both $X_s$ and $X_{pt}$ to train the descriptor extraction network, leading to a more robust model.
+\newline
+\textbf{Domain Adaptation Module.}
+In order for the retrieval to work well across domains it is important that the embeddings produced by the descriptor extraction network are domain agnostic, i.e., they do not encode domain-specific information. We achieve this by using a domain discriminator which receives embeddings from the three domains $D_s$, $D_pt$, and $D_t$. The discriminator is composed of two fully connected layers, and its goal is to classify the domain to which the embeddings belong. Just before the discriminator, there is a gradient reversal layer (\textbf{GRL})~\cite{grl} that in the forward pass acts as an identity transform, while in the backward pass multiplies the gradient by -$\lambda$, where $\lambda > 0$. The use of this layer effectively sets up a min-max game, where the discriminator tries to minimize the domain classification loss, that is a cross-entropy loss $L_{CE}$, while the feature extractor learns to produce domain-invariant embeddings, acting as an adversary to the discriminator.
+
+\textbf{Architecture details.}
+The idea is that for each input $x$, we predict its class $y \in Y$ and its domain label $d \in \{0, 1\}$, depending if it is an image from day or night.
+We assume that the input $x$ is the output of the frozen layers of our CNN backbone, which we call feature vector $f$.
+Then, we fine-tune the last layers of the CNN, the upper branch aggregator in \cref{fig:our_architecture} pools $f$ (if it comes from the labeled source) with GeM Pooling to finish the image descriptor extraction, and we denote the parameters of this section with $\theta_f$. Then the descriptor is mapped to its class label probabilities $y$ by CosFace, with parameters $\theta_y$. Finally, the same feature vector $f$ is mapped to the domain label $d$ by the lower branch in \cref{fig:our_architecture} (\textit{domain classifier}), with $\theta_d$ as parameters.
+During the learning stage, we aim to minimize the label
+prediction loss on the labeled part (i.e. the source part)
+of the training set, and the parameters of both the feature
+extractor $\theta_f$ and the label predictor $\theta_y$ are thus optimized in order to minimize the cross-entropy loss for the source domain samples $L_y$. At the same time, to make the features $f$ domain-invariant we seek $\theta_f$ that maximize the loss of the domain classifier $L_d$, while simultaneously seeking $\theta_d$ that minimizes the latter. The trade-off between the two objectives is controlled by a parameter $\lambda$. The parameters update are similar to the ones of stochastic gradient descent (SGD) for a feed-forward deep model that
+comprises feature extractor fed into the label predictor and
+into the domain classifier, but the difference here is given from $\lambda$ so a direct implementation of SGD is not possible. This can, instead, be accomplished by a Gradient Reversal Layer (GRL)  which during the forward propagation acts as an identity transform and during the backpropagation takes the gradient from
+the subsequent level, multiplies it by $-\lambda$ and passes it to
+the preceding layer.
+At the end of the training phase, the two losses ($L_y$, $L_d$) are combined as $L_y + \alpha \cdot L_d$ where $\alpha = 0.1$.
 
 \subsection{Model Soup}
+Training a learning model is usually done in two steps: first, the model is trained several times by varying the hyper parameters, and then the model with the best performance is chosen before being used. 
+The publication ”Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time”~\cite{modelsoup} proposes to average the weights of the different models to maximize the use of all the training without wasting learning time. This adds very little memory cost, learning time or inference time. The paper shows that a performance increase is visible on some models and even defines a new state of the art on image classification. The authors present two ways to combine two (or more) models to create a soup: greedy soup and uniform soup. In this project we tried to implement greedy version of the proposed solution and then we test the model on the datasets available.
 [TODO] Insert here description of how Model Soup has been implemented.
 
 \section{Experiments}
@@ -254,8 +319,7 @@ Base & 43.9\%  & 61.7\% & 67.0\% & 71.2\%  \\
 \end{table}
 
 The couple of augmentation \textbf{blur, grayscale} seems the best choice for the augmentation pipeline, since not only the model manages to show robustness to that data augmentation pipeline, but also gets improvements.
-Further investigations should be performed with different parameters to deeply understand those results, however it seems that grayscale performs better since it show invariance to the colors of the scenes changing through the day. [TODO valutare se aggiungere ref.]
-[TODO guardare extension b]
+Further investigations should be performed with different parameters (\eg number of iterations, batch size, augmentation intensity, etc.) to deeply understand their behavior, however it seems that applying grayscale to the model leads to better performances, since it might add invariance to the colors of the scenes changing through the day.
 \newline
 
 \textbf{Unsupervised Domain Adaptation with FDA and GRL.}
@@ -270,393 +334,57 @@ To evaluate the capability of our solution to generalize to unseen domains, spec
     Baseline & 52.2/66.3 & 69.5/84.8 & 49.5/72.4 \\
     FDA & 50.5/65.4 & 67.0/85.7 & 47.6/72.4 \\
     FDA+GRL & \textbf{53.7/66.5} & \textbf{70.5/84.8} & \textbf{53.3/73.3}\\
+    FDA+GRL+g & 53.4/65.5 & 67.6/84.8 & 48.6/72.4\\
     \bottomrule
   \end{tabular}
-  \caption{Baseline results compared with FDA only and FDA+GRL (with $\alpha=0.1$)}
+  \caption{Baseline results compared with FDA only, FDA+GRL (with $\alpha=0.1$) and FDA+GRL+grayscale.}
   \label{tab:fda+grl}
 \end{table}
 
-From these results, we surpass the baseline in all the three datasets by using both FDA and GRL together, reaching a \~4\% improvement on Tokyo-night. This confirms that the newly generated model was able to produce "more" domain-invariant features than before. Better can be expected, as the shift between this domain and the source domain (StreetView) is extreme, with very dark images and with a strong yellow tones.
+From these results, we surpass the baseline in all the three datasets by using both FDA and GRL together, reaching a $\sim4\%$ improvement on Tokyo-night. This confirms that the newly generated model was able to produce "more" domain-invariant features than before, with the downside of increasing the training time. Better can be expected by trying out different values for $\alpha$ or maybe performing a better post processing on the pseudo-target images generated.
+Finally, adding the best performing custom augmentation (grayscale with 25\% chance to be applied) didn't provide any improvement to the FDA+GRL model, showing that colors might play a discriminative role especially for the night domain.
+\newline
 
+\textbf{Averaging model weights with Greedy soup algorithm.}
+To maximize model accuracy of our solution we pick all the best models trained and then merge them in a single model capable to improve performances without increasing inference time.
+The greedy soup is constructed by sequentially adding each model as a potential ingredient in the soup, and only keeping the model in the soup if performance on a held out validation set improves.
+For this purpose we decided to sort the models in a decreasing order of their recall values got in the training step, in this way the soup have to be certainly better or equal than the best model analyzed. 
+Unfortunately, due to Colab limitations (in terms of batch size and epochs number for the training step) we didn't achieve any real improvement on our best model (FDA+GRL) after testing on all the datasets available.
+\newline
 
-
-\textbf{Qualitative Evaluation with Top K-NN}
-\newline 
+\textbf{Qualitative Evaluation with Top K-NN.}
 To assess the goodness of the results obtained applying FDA and GRL in particular on Tokyo-Night dataset, we look at the nearest neighbors in the feature space, to understand the trained model's reasoning on different proposed queries. 
 Therefore, we built a top K - Nearest Neighbors visualization
 for which given a query image, the K closest points in the learning embedding space are retrieved.
 In order to retrieve the top K = 5 most similar images to a given one, we calculate the Euclidean distance between the target image's embedding and each image's embedding in the dataset, one by one.
-For our experiment, we used and tested Tokyo-Night [TODO REF] as database for the queries retrieval in fig. \ref{fig:tokyonighttopknn} in two different ways.
-The model was trained with FDA and GRL active [TODO review..], however in the set A)\newline we didn't apply FDA to the images just to be sure that our trained model worked as intended with the original set both on day and night queries and the result was perfect for the first 3 neighbors.
-In the set B) we applied FDA to the dataset and used as query the same image treated with FDA (on the left) and another among its correct night queries (on the right).
-Once again the result was satisfactory and the FDA-treated image was perfectly recognized and integrated in both cases, proving the correct reasoning of our proposed model.
+For our experiment, we used and tested Tokyo-Night as database for the queries retrieval in fig. \cref{fig:tokyonighttopknn} in two different ways.
+The model was trained with both FDA and GRL active, however:
+\begin{itemize}
+    \item in the set \textbf{A} we didn't apply FDA to the dataset used for the Top K-NN retrieval, just to be sure that our trained model worked as intended with the original set, both on day and night queries. The result was perfect for the first 3 neighbors.
+    \item in the set \textbf{B} we applied FDA to the dataset used for the Top K-NN retrieval and used as queries the same image treated with FDA (on the left) and from the night domain (on the right).
+    Once again the result was satisfactory and the FDA-treated image was perfectly recognized and integrated in both cases, proving the correct reasoning of our proposed model.
+\end{itemize}
 
 \begin{figure*}
   \centering
   \begin{subfigure}{1.0\linewidth}
     \centering
     \fbox{ \includegraphics[width=\dimexpr\textwidth-2\fboxrule-2\fboxsep]{assets/topknn.png}}
-    \caption{2a TODO CAPTION, attention to ref}
-    \label{fig:tokyonighttopknn}
   \end{subfigure}
+      \caption{Given a target image, top 5 matching images are shown. Preset A) corresponds to Tokyo-Night dataset without FDA applied.
+Preset B) corresponds to Tokyo-Night dataset with FDA applied on the target image on the left.}
   \hfill
+  \label{fig:tokyonighttopknn}
 \end{figure*}
 
 \section{Conclusions}
 [TODO] Insert here conclusions and possible further implementations.
 
 
-\section{Stuff to copy for Latex}
-
-\subsection{The ruler}
-The \LaTeX\ style defines a printed ruler which should be present in the version submitted for review.
-The ruler is provided in order that reviewers may comment on particular lines in the paper without circumlocution.
-If you are preparing a document using a non-\LaTeX\ document preparation system, please arrange for an equivalent ruler to appear on the final output pages.
-The presence or absence of the ruler should not change the appearance of any other content on the page.
-The camera-ready copy should not contain a ruler.
-(\LaTeX\ users may use options of cvpr.sty to switch between different versions.)
-
-Reviewers:
-note that the ruler measurements do not align well with lines in the paper --- this turns out to be very difficult to do well when the paper contains many figures and equations, and, when done, looks ugly.
-Just use fractional references (\eg, this line is $087.5$), although in most cases one would expect that the approximate location will be adequate.
-
-
-\subsection{Paper ID}
-Make sure that the Paper ID from the submission system is visible in the version submitted for review (replacing the ``*****'' you see in this document).
-If you are using the \LaTeX\ template, \textbf{make sure to update paper ID in the appropriate place in the tex file}.
-
-
-\subsection{Mathematics}
-
-Please number all of your sections and displayed equations as in these examples:
-\begin{equation}
-  E = m\cdot c^2
-  \label{eq:important}
-\end{equation}
-and
-\begin{equation}
-  v = a\cdot t.
-  \label{eq:also-important}
-\end{equation}
-It is important for readers to be able to refer to any particular equation.
-Just because you did not refer to it in the text does not mean some future reader might not need to refer to it.
-It is cumbersome to have to use circumlocutions like ``the equation second from the top of page 3 column 1''.
-(Note that the ruler will not be present in the final copy, so is not an alternative to equation numbers).
-All authors will benefit from reading Mermin's description of how to write mathematics:
-\url{http://www.pamitc.org/documents/mermin.pdf}.
-
-\subsection{Blind review}
-
-Many authors misunderstand the concept of anonymizing for blind review.
-Blind review does not mean that one must remove citations to one's own work---in fact it is often impossible to review a paper unless the previous citations are known and available.
-
-Blind review means that you do not use the words ``my'' or ``our'' when citing previous work.
-That is all.
-(But see below for tech reports.)
-
-Saying ``this builds on the work of Lucy Smith [1]'' does not say that you are Lucy Smith;
-it says that you are building on her work.
-If you are Smith and Jones, do not say ``as we show in [7]'', say ``as Smith and Jones show in [7]'' and at the end of the paper, include reference 7 as you would any other cited work.
-
-An example of a bad paper just asking to be rejected:
-\begin{quote}
-\begin{center}
-    An analysis of the frobnicatable foo filter.
-\end{center}
-
-   In this paper we present a performance analysis of our previous paper [1], and show it to be inferior to all previously known methods.
-   Why the previous paper was accepted without this analysis is beyond me.
-
-   [1] Removed for blind review
-\end{quote}
-
-
-An example of an acceptable paper:
-\begin{quote}
-\begin{center}
-     An analysis of the frobnicatable foo filter.
-\end{center}
-
-   In this paper we present a performance analysis of the  paper of Smith \etal [1], and show it to be inferior to all previously known methods.
-   Why the previous paper was accepted without this analysis is beyond me.
-
-   [1] Smith, L and Jones, C. ``The frobnicatable foo filter, a fundamental contribution to human knowledge''. Nature 381(12), 1-213.
-\end{quote}
-
-If you are making a submission to another conference at the same time, which covers similar or overlapping material, you may need to refer to that submission in order to explain the differences, just as you would if you had previously published related work.
-In such cases, include the anonymized parallel submission~\cite{Authors14} as supplemental material and cite it as
-\begin{quote}
-[1] Authors. ``The frobnicatable foo filter'', F\&G 2014 Submission ID 324, Supplied as supplemental material {\tt fg324.pdf}.
-\end{quote}
-
-Finally, you may feel you need to tell the reader that more details can be found elsewhere, and refer them to a technical report.
-For conference submissions, the paper must stand on its own, and not {\em require} the reviewer to go to a tech report for further details.
-Thus, you may say in the body of the paper ``further details may be found in~\cite{Authors14b}''.
-Then submit the tech report as supplemental material.
-Again, you may not assume the reviewers will read this material.
-
-Sometimes your paper is about a problem which you tested using a tool that is widely known to be restricted to a single institution.
-For example, let's say it's 1969, you have solved a key problem on the Apollo lander, and you believe that the CVPR70 audience would like to hear about your
-solution.
-The work is a development of your celebrated 1968 paper entitled ``Zero-g frobnication: How being the only people in the world with access to the Apollo lander source code makes us a wow at parties'', by Zeus \etal.
-
-You can handle this paper like any other.
-Do not write ``We show how to improve our previous work [Anonymous, 1968].
-This time we tested the algorithm on a lunar lander [name of lander removed for blind review]''.
-That would be silly, and would immediately identify the authors.
-Instead write the following:
-\begin{quotation}
-\noindent
-   We describe a system for zero-g frobnication.
-   This system is new because it handles the following cases:
-   A, B.  Previous systems [Zeus et al. 1968] did not  handle case B properly.
-   Ours handles it by including a foo term in the bar integral.
-
-   ...
-
-   The proposed system was integrated with the Apollo lunar lander, and went all the way to the moon, don't you know.
-   It displayed the following behaviours, which show how well we solved cases A and B: ...
-\end{quotation}
-As you can see, the above text follows standard scientific convention, reads better than the first version, and does not explicitly name you as the authors.
-A reviewer might think it likely that the new paper was written by Zeus \etal, but cannot make any decision based on that guess.
-He or she would have to be sure that no other authors could have been contracted to solve problem B.
-\medskip
-
-\noindent
-FAQ\medskip\\
-{\bf Q:} Are acknowledgements OK?\\
-{\bf A:} No.  Leave them for the final copy.\medskip\\
-{\bf Q:} How do I cite my results reported in open challenges?
-{\bf A:} To conform with the double-blind review policy, you can report results of other challenge participants together with your results in your paper.
-For your results, however, you should not identify yourself and should not mention your participation in the challenge.
-Instead present your results referring to the method proposed in your paper and draw conclusions based on the experimental comparison to other results.\medskip\\
-
-\begin{figure}[t]
-  \centering
-  \fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
-   %\includegraphics[width=0.8\linewidth]{egfigure.eps}
-
-   \caption{Example of caption.
-   It is set in Roman so that mathematics (always set in Roman: $B \sin A = A \sin B$) may be included without an ugly clash.}
-   \label{fig:onecol}
-\end{figure}
-
-\subsection{Miscellaneous}
-
-\noindent
-Compare the following:\\
-\begin{tabular}{ll}
- \verb'$conf_a$' &  $conf_a$ \\
- \verb'$\mathit{conf}_a$' & $\mathit{conf}_a$
-\end{tabular}\\
-See The \TeX book, p165.
-
-The space after \eg, meaning ``for example'', should not be a sentence-ending space.
-So \eg is correct, {\em e.g.} is not.
-The provided \verb'\eg' macro takes care of this.
-
-When citing a multi-author paper, you may save space by using ``et alia'', shortened to ``\etal'' (not ``{\em et.\ al.}'' as ``{\em et}'' is a complete word).
-If you use the \verb'\etal' macro provided, then you need not worry about double periods when used at the end of a sentence as in Alpher \etal.
-However, use it only when there are three or more authors.
-Thus, the following is correct:
-   ``Frobnication has been trendy lately.
-   It was introduced by Alpher~\cite{Alpher02}, and subsequently developed by
-   Alpher and Fotheringham-Smythe~\cite{Alpher03}, and Alpher \etal~\cite{Alpher04}.''
-
-This is incorrect: ``... subsequently developed by Alpher \etal~\cite{Alpher03} ...'' because reference~\cite{Alpher03} has just two authors.
-
-
-% Update the cvpr.cls to do the following automatically.
-% For this citation style, keep multiple citations in numerical (not
-% chronological) order, so prefer \cite{Alpher03,Alpher02,Authors14} to
-% \cite{Alpher02,Alpher03,Authors14}.
-
-
-\begin{figure*}
-  \centering
-  \begin{subfigure}{0.68\linewidth}
-    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
-    \caption{An example of a subfigure.}
-    \label{fig:short-a}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.28\linewidth}
-    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
-    \caption{Another example of a subfigure.}
-    \label{fig:short-b}
-  \end{subfigure}
-  \caption{Example of a short caption, which should be centered.}
-  \label{fig:short}
-\end{figure*}
-
-%------------------------------------------------------------------------
-\section{Formatting your paper}
-\label{sec:formatting}
-
-All text must be in a two-column format.
-The total allowable size of the text area is $6\frac78$ inches (17.46 cm) wide by $8\frac78$ inches (22.54 cm) high.
-Columns are to be $3\frac14$ inches (8.25 cm) wide, with a $\frac{5}{16}$ inch (0.8 cm) space between them.
-The main title (on the first page) should begin 1 inch (2.54 cm) from the top edge of the page.
-The second and following pages should begin 1 inch (2.54 cm) from the top edge.
-On all pages, the bottom margin should be $1\frac{1}{8}$ inches (2.86 cm) from the bottom edge of the page for $8.5 \times 11$-inch paper;
-for A4 paper, approximately $1\frac{5}{8}$ inches (4.13 cm) from the bottom edge of the
-page.
-
-%-------------------------------------------------------------------------
-\subsection{Margins and page numbering}
-
-All printed material, including text, illustrations, and charts, must be kept
-within a print area $6\frac{7}{8}$ inches (17.46 cm) wide by $8\frac{7}{8}$ inches (22.54 cm)
-high.
-%
-Page numbers should be in the footer, centered and $\frac{3}{4}$ inches from the bottom of the page.
-The review version should have page numbers, yet the final version submitted as camera ready should not show any page numbers.
-The \LaTeX\ template takes care of this when used properly.
-
-
-
-%-------------------------------------------------------------------------
-\subsection{Type style and fonts}
-
-Wherever Times is specified, Times Roman may also be used.
-If neither is available on your word processor, please use the font closest in
-appearance to Times to which you have access.
-
-MAIN TITLE.
-Center the title $1\frac{3}{8}$ inches (3.49 cm) from the top edge of the first page.
-The title should be in Times 14-point, boldface type.
-Capitalize the first letter of nouns, pronouns, verbs, adjectives, and adverbs;
-do not capitalize articles, coordinate conjunctions, or prepositions (unless the title begins with such a word).
-Leave two blank lines after the title.
-
-AUTHOR NAME(s) and AFFILIATION(s) are to be centered beneath the title
-and printed in Times 12-point, non-boldface type.
-This information is to be followed by two blank lines.
-
-The ABSTRACT and MAIN TEXT are to be in a two-column format.
-
-MAIN TEXT.
-Type main text in 10-point Times, single-spaced.
-Do NOT use double-spacing.
-All paragraphs should be indented 1 pica (approx.~$\frac{1}{6}$ inch or 0.422 cm).
-Make sure your text is fully justified---that is, flush left and flush right.
-Please do not place any additional blank lines between paragraphs.
-
-Figure and table captions should be 9-point Roman type as in \cref{fig:onecol,fig:short}.
-Short captions should be centred.
-
-\noindent Callouts should be 9-point Helvetica, non-boldface type.
-Initially capitalize only the first word of section titles and first-, second-, and third-order headings.
-
-FIRST-ORDER HEADINGS.
-(For example, {\large \bf 1. Introduction}) should be Times 12-point boldface, initially capitalized, flush left, with one blank line before, and one blank line after.
-
-SECOND-ORDER HEADINGS.
-(For example, { \bf 1.1. Database elements}) should be Times 11-point boldface, initially capitalized, flush left, with one blank line before, and one after.
-If you require a third-order heading (we discourage it), use 10-point Times, boldface, initially capitalized, flush left, preceded by one blank line, followed by a period and your text on the same line.
-
-%-------------------------------------------------------------------------
-\subsection{Footnotes}
-
-Please use footnotes\footnote{This is what a footnote looks like.
-It often distracts the reader from the main flow of the argument.} sparingly.
-Indeed, try to avoid footnotes altogether and include necessary peripheral observations in the text (within parentheses, if you prefer, as in this sentence).
-If you wish to use a footnote, place it at the bottom of the column on the page on which it is referenced.
-Use Times 8-point type, single-spaced.
-
-
-%-------------------------------------------------------------------------
-\subsection{Cross-references}
-
-For the benefit of author(s) and readers, please use the
-{\small\begin{verbatim}
-  \cref{...}
-\end{verbatim}}  command for cross-referencing to figures, tables, equations, or sections.
-This will automatically insert the appropriate label alongside the cross-reference as in this example:
-\begin{quotation}
-  To see how our method outperforms previous work, please see \cref{fig:onecol} and \cref{tab:example}.
-  It is also possible to refer to multiple targets as once, \eg~to \cref{fig:onecol,fig:short-a}.
-  You may also return to \cref{sec:formatting} or look at \cref{eq:also-important}.
-\end{quotation}
-If you do not wish to abbreviate the label, for example at the beginning of the sentence, you can use the
-{\small\begin{verbatim}
-  \Cref{...}
-\end{verbatim}}
-command. Here is an example:
-\begin{quotation}
-  \Cref{fig:onecol} is also quite important.
-\end{quotation}
-
-%-------------------------------------------------------------------------
-\subsection{References}
-
-List and number all bibliographical references in 9-point Times, single-spaced, at the end of your paper.
-When referenced in the text, enclose the citation number in square brackets, for
-example~\cite{Authors14}.
-Where appropriate, include page numbers and the name(s) of editors of referenced books.
-When you cite multiple papers at once, please make sure that you cite them in numerical order like this \cite{Alpher02,Alpher03,Alpher05,Authors14b,Authors14}.
-If you use the template as advised, this will be taken care of automatically.
-
-\begin{table}
-  \centering
-  \begin{tabular}{@{}lc@{}}
-    \toprule
-    Method & Frobnability \\
-    \midrule
-    Theirs & Frumpy \\
-    Yours & Frobbly \\
-    Ours & Makes one's heart Frob\\
-    \bottomrule
-  \end{tabular}
-  \caption{Results.   Ours is better.}
-  \label{tab:example}
-\end{table}
-
-%-------------------------------------------------------------------------
-\subsection{Illustrations, graphs, and photographs}
-
-All graphics should be centered.
-In \LaTeX, avoid using the \texttt{center} environment for this purpose, as this adds potentially unwanted whitespace.
-Instead use
-{\small\begin{verbatim}
-  \centering
-\end{verbatim}}
-at the beginning of your figure.
-Please ensure that any point you wish to make is resolvable in a printed copy of the paper.
-Resize fonts in figures to match the font in the body text, and choose line widths that render effectively in print.
-Readers (and reviewers), even of an electronic copy, may choose to print your paper in order to read it.
-You cannot insist that they do otherwise, and therefore must not assume that they can zoom in to see tiny details on a graphic.
-
-When placing figures in \LaTeX, it's almost always best to use \verb+\includegraphics+, and to specify the figure width as a multiple of the line width as in the example below
-{\small\begin{verbatim}
-   \usepackage{graphicx} ...
-   \includegraphics[width=0.8\linewidth]
-                   {myfile.pdf}
-\end{verbatim}
-}
-
-
-%-------------------------------------------------------------------------
-\subsection{Color}
-
-Please refer to the author guidelines on the \confName\ \confYear\ web page for a discussion of the use of color in your document.
-
-If you use color in your plots, please keep in mind that a significant subset of reviewers and readers may have a color vision deficiency; red-green blindness is the most frequent kind.
-Hence avoid relying only on color as the discriminative feature in plots (such as red \vs green lines), but add a second discriminative feature to ease disambiguation.
-
-%------------------------------------------------------------------------
-\section{Final copy}
-
-You must include your signed IEEE copyright release form when you submit your finished paper.
-We MUST have this form before your paper can be published in the proceedings.
-
-Please direct any questions to the production editor in charge of these proceedings at the IEEE Computer Society Press:
-\url{https://www.computer.org/about/contact}.
-
-
 %%%%%%%%% REFERENCES
 {\small
-\bibliographystyle{ieee_fullname}
+\clearpage
+\bibliographystyle{IEEEtran}
 \bibliography{egbib}
 }
 
