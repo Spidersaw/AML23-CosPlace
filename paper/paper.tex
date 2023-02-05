@@ -66,8 +66,8 @@ Politecnico di Torino\\
 %%%%%%%%% ABSTRACT
 \begin{abstract}
 Visual Geo-localization (VG) is the task of estimating the position where a given photo was taken by comparing it with a large database of images of known locations.
-In this work, we investigate the results of CosPlace~\cite{Berton_CVPR_2022_CosPlace} in the task of Visual Geo-Localization. Their method casts the training as a classification problem and achieves state-of-the-art performances on a wide range of datasets and domain changes. We conducted a thorough ablation study of the loss function by comparing it with SphereFace and ArcFace loss functions and, finally, we carried out experiments on Domain Adaptation and Model Ensemble to try reach better benchmarks.
-[TODO REVIEW FINALE]
+In this work, we investigate the results of CosPlace~\cite{Berton_CVPR_2022_CosPlace} in the task of Visual Geo-Localization. Their method casts the training as a classification problem and achieves state-of-the-art performances on a wide range of datasets and domain changes. We conducted a thorough ablation study of the loss function by comparing it with SphereFace~\cite{sphereface} and ArcFace~\cite{arcface} loss functions. Moreover, we carried out experiments on Domain Adaptation and Model Ensemble showing how a hybrid generative-discriminative approach helps robustness across domains, with special focus to the night one.
+Finally, we assessed the behavior of our best model in a qualitative way, showing the correct reasoning in the image retrieval task.
 Dataset, code and trained models are available for research purposes at: \newline
 \url{https://github.com/Spidersaw/AML23-CosPlace/}
 \end{abstract}
@@ -90,7 +90,7 @@ current datasets are either too small in the geographical coverage~\cite{netvlad
 disjoint sets for training and inference and this not suits a realistic use case, since the search query might be often an already seen place.
 For this reason it is recommendable to use the whole dataset to train the model, given also the cost of collecting the images for a consistent dataset.
 \newline
-\textbf{Training scalability}
+\textbf{Training scalability.}
 Having access to a massive amount of data raises the question of how to use it effectively for training. Many of the recent SOTA (state-of-the-art) methods take advantage
 of contrastive learning ~\cite{netvlad, adageo}, which can often depend on contrasting positive to negative examples across the training dataset, a costly operation in terms of computation. CosPlace~\cite{Berton_CVPR_2022_CosPlace}, instead, addresses this limitation by using:
 \begin{itemize}
@@ -99,17 +99,16 @@ of contrastive learning ~\cite{netvlad, adageo}, which can often depend on contr
 \end{itemize}
 successfully reaching SOTA results with compact descriptors.
 \newline
-\textbf{Contributions}
+\textbf{Contributions.}
 In this paper we want to investigate how the work of~\cite{Berton_CVPR_2022_CosPlace} can be improved for place recognition tasks, but using a smaller version of SF-XL dataset (called SF-XS) for the training, due to our limited resources.
-In particular we focus on trying to:
+In particular we focus on:
 \begin{itemize}
     \item generally improve the recalls on SF-XS and Tokyo-XS (a smaller version of Tokyo 24/7~\cite{tokyo247}), even with the help of ensembles to concatenate the descriptors of different models.
-    \item improve robustness to domain shift by borrowing techniques from the field of domain adaptation~\cite{adageo}, and testing the results on a dataset which only contains night images, called Tokyo-Night (a filtered version of Tokyo-XS).
+    \item improve robustness to domain shift by borrowing techniques from the field of domain adaptation~\cite{adageo}, and testing the results on a dataset which only contains night images, called Tokyo-Night (a filtered version of Tokyo-XS) and deeply understanding the applied domain adaptation techniques.
     \item assess how CosPlace behaves when data quality is scarce (\eg occlusion and blurry photos). 
 \end{itemize} 
 
-[TODO conclusioni rapide]
-
+Through some experiments, we demonstrate that our solution exceeds the baseline provided by CosPlace on three different datasets and that the core ideas of the architecture (data augmentation, both domain-driven and non, and subsequent domain adaptation) provide modest increments to the performance.
 
 %-------------------------------------------------------------------------
 \section{Related Works}\label{sec:relatedworks}
@@ -145,8 +144,17 @@ At the end, we tried averaging the weights of models trained in the previous ste
 \begin{figure*}
   \centering
   \begin{subfigure}{0.58\linewidth}
-    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}}
-    \caption{Example of images from San Francisco XS dataset.}
+    \fbox{
+   
+    \begin{tabular}{ccc}
+      \includegraphics[width=25mm]{assets/gridof6/example1.jpg} &   \includegraphics[width=25mm]{assets/gridof6/example2.jpg} &
+      \includegraphics[width=25mm]{assets/gridof6/example3.jpg}\\
+     \includegraphics[width=25mm]{assets/gridof6/example4.jpg} &   \includegraphics[width=25mm]{assets/gridof6/example5.jpg} &
+      \includegraphics[width=25mm]{assets/gridof6/example6.jpg}\\
+    \end{tabular}
+
+    }
+    \caption{Example of images from San Francisco XS dataset: they cover different time \\of the day, weather conditions, viewpoint and occlusions.}
     \label{fig:short-a}
   \end{subfigure}
   \hfill
@@ -167,7 +175,7 @@ Finally, to understand if the changes applied to our model help in geolocalizing
 
 
 \subsection{CosPlace}
-Our work starts from CosPlace, an innovative approach in the field of visual geo-localization~\cite{Berton_CVPR_2022_CosPlace}. CosPlace casts the network training as an image classification problem: it partition the geographical area of interest in oriented cells, representing different classes, using UTM coordinates $\{east,north\}$\footnote{UTM coordinates are defined by a system used to identify locations on earth in meters, where 1 UTM unit corresponds to 1 meter. They can be extracted from GPS coordinates (i.e., latitude and longitude) and allow approximating a restricted area of the earth’s surface on a flat surface.} and orientation/heading $\{heading\}$. The extent of each class in terms of position and heading is defined by two parameters $M$ and $\alpha$, respectively. Then, it iteratively considers subsets of these cells (called groups $G_{uvw}$) to train the network.
+Our work starts from CosPlace, an innovative approach in the field of visual geo-localization~\cite{Berton_CVPR_2022_CosPlace}. CosPlace casts the network training as an image classification problem: it partitions the geographical area of interest in oriented cells, representing different classes, using UTM coordinates $\{east,north\}$\footnote{UTM coordinates are defined by a system used to identify locations on earth in meters, where 1 UTM unit corresponds to 1 meter. They can be extracted from GPS coordinates (i.e., latitude and longitude) and allow approximating a restricted area of the earth’s surface on a flat surface.} and orientation/heading $\{heading\}$. The extent of each class in terms of position and heading is defined by two parameters $M$ and $\alpha$, respectively. Then, it iteratively considers subsets of these cells (called groups $G_{uvw}$) to train the network.
 These groups are generated by fixing the minimum spatial separation that two classes of the same group should have, either in terms of translation or orientation. For this reason, they introduced two parameters: $N$ controls the minimum number of cells between two classes of the same group, and $L$ is the equivalent for the orientation.
 Therefore, we have trained sequentially over the groups as:
 \begin{equation}
@@ -196,7 +204,7 @@ At validation and test time, we used the model generated not to classify the que
 
 \subsection{Custom Augmentations}
 To assess the robustness of CosPlace~\cite{Berton_CVPR_2022_CosPlace}, its capability to learn a good embedding space even on sub-optimal picture quality and try to find augmentations to achieve better generalization,
-we conducted a study on the augmentation pipeline already present in the original implementation following SFRS \cite{sfrs} during the training step (Color Jitter, RandomResizedCrop, Normalize) that we named \textbf{base}, by adding 4 new augmentations on the images after Color Jittering, with a probability of 25\% of being applied and a fixed seed for reproducibility purposes. Those augmentations consisted of:
+we conducted a study on the augmentation pipeline already present in the original implementation. Following SFRS \cite{sfrs} during the training step (Color Jitter, RandomResizedCrop, Normalize) that we named \textbf{base}, we added 4 new augmentations on the images after the default Color Jittering, with a 25\%  chance of being applied and a fixed seed for reproducibility purposes. Those augmentations consisted of:
 \begin{itemize}
   \item \textbf{Gaussian Blur}\newline
 Blurring images can show the robustness of CosPlace on realistic use case in which the provided images are not always clear.
@@ -226,8 +234,10 @@ The purpose of the domain-driven data augmentation (DDDA) module is to find a ma
 Since the pseudo-target images generated didn't look as "night" as thought, for all the processed images, we reduced their saturation to 70\% and converted their temperature towards blue, to give them a colder appearance, as shown in~\cref{fig:fda_show}
 Afterward, we use both $X_s$ and $X_{pt}$ to train the descriptor extraction network, leading to a more robust model.
 \newline
+
 \textbf{Domain Adaptation Module.}
 In order for the retrieval to work well across domains it is important that the embeddings produced by the descriptor extraction network are domain agnostic, i.e., they do not encode domain-specific information. We achieve this by using a domain discriminator which receives embeddings from the three domains $D_s$, $D_pt$, and $D_t$. The discriminator is composed of two fully connected layers, and its goal is to classify the domain to which the embeddings belong. Just before the discriminator, there is a gradient reversal layer (\textbf{GRL})~\cite{grl} that in the forward pass acts as an identity transform, while in the backward pass multiplies the gradient by -$\lambda$, where $\lambda > 0$. The use of this layer effectively sets up a min-max game, where the discriminator tries to minimize the domain classification loss, that is a cross-entropy loss $L_{CE}$, while the feature extractor learns to produce domain-invariant embeddings, acting as an adversary to the discriminator.
+\newline
 
 \textbf{Architecture details.}
 The idea is that for each input $x$, we predict its class $y \in Y$ and its domain label $d \in \{0, 1\}$, depending if it is an image from day or night.
@@ -245,7 +255,7 @@ At the end of the training phase, the two losses ($L_y$, $L_d$) are combined as 
 
 \subsection{Model Soup}
 Training a learning model is usually done in two steps: first, the model is trained several times by varying the hyper parameters, and then the model with the best performance is chosen before being used. 
-The publication ”Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time”~\cite{modelsoup} proposes to average the weights of the different models to maximize the use of all the training without wasting learning time. This adds very little memory cost, learning time or inference time. The paper shows that a performance increase is visible on some models and even defines a new state of the art on image classification. The authors present two ways to combine two (or more) models to create a soup: greedy soup and uniform soup. In this project we tried to implement greedy version of the proposed solution and then we test the model on the datasets available.
+The publication ”Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time”~\cite{modelsoup} proposes to average the weights of the different models to maximize the use of all the training [TODO training cosa??] without wasting learning time. This adds very little memory cost, learning time or inference time. The paper shows that a performance increase is visible on some models and even defines a new state of the art on image classification. The authors present two ways to combine two (or more) models to create a soup: greedy soup and uniform soup. In this project we tried to implement greedy version of the proposed solution and then we test the model on the datasets available.
 [TODO] Insert here description of how Model Soup has been implemented.
 
 \section{Experiments}
@@ -342,14 +352,14 @@ To evaluate the capability of our solution to generalize to unseen domains, spec
 \end{table}
 
 From these results, we surpass the baseline in all the three datasets by using both FDA and GRL together, reaching a $\sim4\%$ improvement on Tokyo-night. This confirms that the newly generated model was able to produce "more" domain-invariant features than before, with the downside of increasing the training time. Better can be expected by trying out different values for $\alpha$ or maybe performing a better post processing on the pseudo-target images generated.
-Finally, adding the best performing custom augmentation (grayscale with 25\% chance to be applied) didn't provide any improvement to the FDA+GRL model, showing that colors might play a discriminative role especially for the night domain.
+Finally, adding the best performing custom augmentation (grayscale with 25\% chance to be applied) didn't provide any improvement to the FDA+GRL model, showing that if real colors are available, they will outperform the generalization improvement of grayscale.
 \newline
 
 \textbf{Averaging model weights with Greedy soup algorithm.}
 To maximize model accuracy of our solution we pick all the best models trained and then merge them in a single model capable to improve performances without increasing inference time.
 The greedy soup is constructed by sequentially adding each model as a potential ingredient in the soup, and only keeping the model in the soup if performance on a held out validation set improves.
 For this purpose we decided to sort the models in a decreasing order of their recall values got in the training step, in this way the soup have to be certainly better or equal than the best model analyzed. 
-Unfortunately, due to Colab limitations (in terms of batch size and epochs number for the training step) we didn't achieve any real improvement on our best model (FDA+GRL) after testing on all the datasets available.
+Unfortunately, due to Colab limitations (in terms of batch size and epochs number for the training step) we had a limited number of models to use and we didn't achieve any real improvement on our best model (FDA+GRL) after testing on all the datasets available. This can happen if every time the next model in the list is added, it gets discarded because it doesn't provide any performance increment. This could be one of the approaches to be further explored, in the future, with more advanced tools. 
 \newline
 
 \textbf{Qualitative Evaluation with Top K-NN.}
@@ -365,8 +375,8 @@ The model was trained with both FDA and GRL active, however:
     Once again the result was satisfactory and the FDA-treated image was perfectly recognized and integrated in both cases, proving the correct reasoning of our proposed model.
 \end{itemize}
 
-\begin{figure*}
-  \centering
+\begin{figure*}[t]
+\centering
   \begin{subfigure}{1.0\linewidth}
     \centering
     \fbox{ \includegraphics[width=\dimexpr\textwidth-2\fboxrule-2\fboxsep]{assets/topknn.png}}
@@ -378,7 +388,15 @@ Preset B) corresponds to Tokyo-Night dataset with FDA applied on the target imag
 \end{figure*}
 
 \section{Conclusions}
-[TODO] Insert here conclusions and possible further implementations.
+In this paper, we proposed different improvements to CosPlace.
+In order to obtain better performances than the baseline on the night dataset, different from the training one for colors, brightness and city where the pictures were taken, we demonstrated that it is possible to improve domain shifting by applying FDA on the training dataset and using a Domain Adaptation module that forces the feature extractor to produce domain-invariant representations. We have also found that this solution improves the recalls of SF-XS and Tokyo-XS as well, and we assessed our results with a Top K-NN retrieval.
+\newline
+Furthermore, we confirmed our hypothesis of applying grayscale on images to improve illumination invariance.
+\newline
+Finally, we tried boosting recalls of our model with a Greedy Soup approach, but didn't get any enhancement or worsening.
+\newline
+
+We believe that this work can be still improved, possibly with the use of an attention layer before the aggregator, as done in~\cite{adageo} that, given this field and on top of our proposals, might show interesting results.
 
 
 %%%%%%%%% REFERENCES
