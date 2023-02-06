@@ -34,7 +34,7 @@ logging.info(f"The outputs are being saved in {output_folder}")
 model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
 
 
-model = model.to(args.device).train()
+model = model.to(args.device)
 
 
 test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",

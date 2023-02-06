@@ -1,3 +1,4 @@
+
 import sys
 import torch
 import logging
@@ -6,33 +7,35 @@ from tqdm import tqdm
 import multiprocessing
 from datetime import datetime
 import torchvision.transforms as T
-
+import custom_augmentations as CA
 import test
 import util
 import our_parser
 import commons
 import cosface_loss
 import new_cosface_loss
-import arcface_loss
 import sphereface_loss
+import arcface_loss
 import augmentations
 from model import network
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
+from datasets.grl_datasets import GrlDataset
+import random 
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
 args = our_parser.parse_arguments()
 start_time = datetime.now()
-output_folder = f"logs/{args.save_dir}/{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
+output_folder = f"AML23-CosPlace/model/results/best_{start_time.strftime('%Y-%m-%d_%H-%M-%S')}"
 commons.make_deterministic(args.seed)
 commons.setup_logging(output_folder, console="debug")
 logging.info(" ".join(sys.argv))
 logging.info(f"Arguments: {args}")
 logging.info(f"The outputs are being saved in {output_folder}")
 
-#### Model
-model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim)
+#### Model (+ GRL for domain adaptation)
+model = network.GeoLocalizationNet(args.backbone, args.fc_output_dim, grl = args.grl)
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
@@ -45,11 +48,16 @@ model = model.to(args.device).train()
 
 #### Optimizer
 criterion = torch.nn.CrossEntropyLoss()
+epoch_grl_loss = 0 
+domain_adapt_criterion = torch.nn.CrossEntropyLoss() if args.grl == True else None #Loss for Domain Adaptation
 model_optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
 #### Datasets
 groups = [TrainDataset(args, args.train_set_folder, M=args.M, alpha=args.alpha, N=args.N, L=args.L,
                        current_group=n, min_images_per_class=args.min_images_per_class) for n in range(args.groups_num)]
+grl_dataset = GrlDataset(sf_xs_train_path="/content/small/train", target_path="/content/AML23-CosPlace/our_FDA/target") if args.grl == True else None #To Do... Add Target Dataset for Domain Adaptation
+
+# Each group has its own classifier, which depends on the number of classes in the group
 # Each group has its own classifier, which depends on the number of classes in the group
 classifiers = None
 if args.loss_function == "cosface":
@@ -66,12 +74,6 @@ classifiers_optimizers = [torch.optim.Adam(classifier.parameters(), lr=args.clas
 logging.info(f"Using {len(groups)} groups")
 logging.info(f"The {len(groups)} groups have respectively the following number of classes {[len(g) for g in groups]}")
 logging.info(f"The {len(groups)} groups have respectively the following number of images {[g.get_images_num() for g in groups]}")
-
-val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
-test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
-                      positive_dist_threshold=args.positive_dist_threshold)
-logging.info(f"Validation set: {val_ds}")
-logging.info(f"Test set: {test_ds}")
 
 #### Resume
 if args.resume_train:
@@ -90,8 +92,16 @@ logging.info(f"There are {len(groups[0])} classes for the first group, " +
              f"with batch_size {args.batch_size}, therefore the model sees each class (on average) " +
              f"{args.iterations_per_epoch * args.batch_size / len(groups[0]):.1f} times per epoch")
 
+test_ds = TestDataset(args.test_set_folder, queries_folder="queries_v1",
+                      positive_dist_threshold=args.positive_dist_threshold)
+val_ds = TestDataset(args.val_set_folder, positive_dist_threshold=args.positive_dist_threshold)
+logging.info(f"Validation set: {val_ds}")
+logging.info(f"Test set: {test_ds}")
+
+
 
 if args.augmentation_device == "cuda":
+    random.seed(4321)
     gpu_augmentation = T.Compose([
             augmentations.DeviceAgnosticColorJitter(brightness=args.brightness,
                                                     contrast=args.contrast,
@@ -99,6 +109,10 @@ if args.augmentation_device == "cuda":
                                                     hue=args.hue),
             augmentations.DeviceAgnosticRandomResizedCrop([512, 512],
                                                           scale=[1-args.random_resized_crop, 1]),
+                                                          T.RandomHorizontalFlip(p=args.hflip),
+                                                          CA.RandomGaussianBlur(p=args.gblur,kernel_size=1,sigma=(0.1,2.0)),
+                                                          T.RandomGrayscale(p=args.rgrayscale),
+                                                          T.RandomErasing(p=args.rerasing, scale=(0.02, 0.25), ratio=(0.3, 3.3), value=0, inplace=False),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
@@ -117,14 +131,23 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
     dataloader = commons.InfiniteDataLoader(groups[current_group_num], num_workers=args.num_workers,
                                             batch_size=args.batch_size, shuffle=True,
                                             pin_memory=(args.device == "cuda"), drop_last=True)
+
+    domain_adapt_dataloader = torch.utils.data.DataLoader(grl_dataset, num_workers=args.num_workers,
+                                            batch_size=args.batch_size, shuffle=True,
+                                            pin_memory=(args.device == "cuda"), drop_last=True) if args.grl == True else None
     
     dataloader_iterator = iter(dataloader)
+    domain_adapt_dataloader_iterator = iter(domain_adapt_dataloader) if args.grl == True else None
     model = model.train()
     
     epoch_losses = np.zeros((0, 1), dtype=np.float32)
     for iteration in tqdm(range(args.iterations_per_epoch), ncols=100):
         images, targets, _ = next(dataloader_iterator)
         images, targets = images.to(args.device), targets.to(args.device)
+
+        if (args.grl == True):
+            domain_adapt_images, domain_adapt_labels = next(domain_adapt_dataloader_iterator)
+            domain_adapt_images, domain_adapt_labels = domain_adapt_images.to(args.device), domain_adapt_labels.to(args.device)
         
         if args.augmentation_device == "cuda":
             images = gpu_augmentation(images)
@@ -133,22 +156,44 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
         classifiers_optimizers[current_group_num].zero_grad()
         
         if not args.use_amp16:
-            descriptors = model(images)
-            output = classifiers[current_group_num](descriptors, targets)
-            loss = criterion(output, targets)
+            descriptors = model(images) #feature extraction -> theta_f
+            output = classifiers[current_group_num](descriptors, targets) #output probabilities for each class -> theta_y
+            loss = criterion(output, targets) #scalar value that represents the difference between the predicted and true class probabilities.
             loss.backward()
-            epoch_losses = np.append(epoch_losses, loss.item())
-            del loss, output, images
-            model_optimizer.step()
-            classifiers_optimizers[current_group_num].step()
+            '''
+            Domain Adaptation here
+            '''
+            domain_adapt_loss = 0 #Initialized to 0 so that i can append it anyway to epoch_losses
+            if (args.grl == True):
+                alpha = 0.1 #GRL trade-off value
+                domain_adapt_output = model(domain_adapt_images, grl=args.grl)
+                domain_adapt_loss = domain_adapt_criterion(domain_adapt_output, domain_adapt_labels)
+                domain_adapt_loss = domain_adapt_loss * alpha
+                domain_adapt_loss.backward()
+                domain_adapt_loss = domain_adapt_loss.item() #.item() returns tensor value as a standard number
+                epoch_grl_loss += domain_adapt_loss
+                del domain_adapt_images, domain_adapt_output
+
+            epoch_losses = np.append(epoch_losses, loss.item() + domain_adapt_loss) #append loss (L_f + alpha*L_CE)
+            del loss, domain_adapt_loss, output, images
+            model_optimizer.step() #optimize parameters
+            classifiers_optimizers[current_group_num].step() 
         else:  # Use AMP 16
             with torch.cuda.amp.autocast():
                 descriptors = model(images)
                 output = classifiers[current_group_num](descriptors, targets)
                 loss = criterion(output, targets)
-            scaler.scale(loss).backward()
-            epoch_losses = np.append(epoch_losses, loss.item())
-            del loss, output, images
+                domain_adapt_loss = 0
+                if (args.grl == True):
+                    alpha = 0.1
+                    domain_adapt_output = model(domain_adapt_images, grl=args.grl)
+                    domain_adapt_loss = domain_adapt_criterion(domain_adapt_output, domain_adapt_labels)
+                    domain_adapt_loss = domain_adapt_loss * alpha
+                    epoch_grl_loss += domain_adapt_loss.item()
+                    del domain_adapt_images, domain_adapt_output
+            scaler.scale(loss + domain_adapt_loss).backward()
+            epoch_losses = np.append(epoch_losses, loss.item() + domain_adapt_loss.item())
+            del loss, domain_adapt_loss, output, images
             scaler.step(model_optimizer)
             scaler.step(classifiers_optimizers[current_group_num])
             scaler.update()
@@ -158,6 +203,7 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
     
     logging.debug(f"Epoch {epoch_num:02d} in {str(datetime.now() - epoch_start_time)[:-7]}, "
                   f"loss = {epoch_losses.mean():.4f}")
+    if args.grl: logging.debug(f"Average GRL epoch loss (* alpha = 0.1): {epoch_grl_loss/args.iterations_per_epoch:.4f}")
     
     #### Evaluation
     recalls, recalls_str = test.test(args, val_ds, model)
@@ -176,6 +222,9 @@ for epoch_num in range(start_epoch_num, args.epochs_num):
 
 
 logging.info(f"Trained for {epoch_num+1:02d} epochs, in total in {str(datetime.now() - start_time)[:-7]}")
+
+#### Best model is saved in f"{output_folder}/best_model.pth"
+logging.info(f"Best model is saved in {output_folder}/best_model.pth")
 
 #### Test best model on test set v1
 best_model_state_dict = torch.load(f"{output_folder}/best_model.pth")
