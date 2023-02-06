@@ -1,5 +1,14 @@
 import matplotlib.pyplot as plt
 
+
+def get_count(classes, images):
+    #return list containing [class_index]*no.instances per class
+    #[0,0,0,0...,1,1,1,...,2,2,2,2....]
+    count = []
+    for i in range(int(len(classes))):
+      count.extend([i]*len(images[classes[i]]))
+    return count
+
 #Histogram showing how many cells contain a given number of images. (Density?)
 
 
@@ -10,15 +19,15 @@ import matplotlib.pyplot as plt
 def plot_histogram(classes, images):
     #x = classes
     #y = num. of images
+
+    count = get_count(classes,images)
         
     plt.figure()
-    plt.title("Distribution")
+    plt.title("Number of images per class")
     plt.xlabel("Classes")
+    plt.ylabel("Count")
     
-    for i in range(len(classes)):
-        plt.hist(images[classes[i]], bins = 10, density = True, alpha = 0.4)
-
-    plt.legend()
-    #plt.savefig('%s/%s_%d.pdf' % (folder,name,index))
+    plt.hist(count, bins=range(int(len(classes))+1), alpha=1)
+    plt.savefig('%s/%s.jpeg' % ('/content','no_images_per_class'))
     plt.show()
 
